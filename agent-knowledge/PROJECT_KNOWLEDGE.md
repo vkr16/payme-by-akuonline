@@ -80,6 +80,8 @@ $$\text{Total Akhir Dibayar} = \text{Subtotal Item Pengguna} + \text{Biaya Tamba
 |---|---|---|---|
 | `GET /` | `home` | `resources/views/landing.blade.php` | Landing page lengkap: Hero Section, Interactive Real-Life Split Bill Simulator, 3 Value Pillars, Cara Kerja (3 Steps), Ownership Advantages, 7 FAQ Points, Bottom CTA. Menggunakan QR SVG riil (`public/images/qris-saya.svg`). |
 | `GET /design-guide` | `design.guide` | `resources/views/design-guide.blade.php` | Living Design System showcase: Color palette, typography, interactive split card, dynamic QR generator preview, multi-bank copy cards, semantic badges, and accessible modal dialogs. |
+| `GET /login` | `login` | `resources/views/auth/login.blade.php` | Halaman Masuk: Form email & password bersih, toggle intip password, remember me, link lupa password. |
+| `GET /register` | `register` | `resources/views/auth/register.blade.php` | Halaman Daftar: Form pendaftaran email instan (tanpa verifikasi email rumit, langsung aktif), toggle intip password. |
 
 ---
 

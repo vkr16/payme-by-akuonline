@@ -10,12 +10,12 @@
     <meta name="description" content="@yield('meta_description', 'Bagi tagihan patungan dan buat invoice instan dengan konversi QRIS statis ke dinamis ber-nominal presisi.')">
     <meta property="og:title" content="@yield('title', 'PayMe - Split Bill & Dynamic QRIS')">
     <meta property="og:description" content="@yield('meta_description', 'Bagi tagihan patungan dan buat invoice instan dengan konversi QRIS statis ke dinamis ber-nominal presisi.')">
-    <meta property="og:image" content="{{ asset('images/qrlogo.png') }}">
+    <meta property="og:image" content="{{ asset('images/scan-qr-code.svg') }}">
     <meta property="og:type" content="website">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ asset('images/qrlogo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/qrlogo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/scan-qr-code.svg') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/scan-qr-code.svg') }}">
 
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,11 +61,11 @@
 
                 <!-- Navigation Actions (Login & Register for Hosts) -->
                 <nav class="flex items-center gap-2 sm:gap-3">
-                    <a href="#" class="touch-target inline-flex items-center px-3.5 py-2 text-xs sm:text-sm font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70 rounded-lg transition-colors">
+                    <a href="{{ route('login') }}" class="touch-target inline-flex items-center px-3.5 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('login') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors">
                         Masuk
                     </a>
 
-                    <a href="#" class="touch-target inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg btn-primary transition-all">
+                    <a href="{{ route('register') }}" class="touch-target inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg btn-primary transition-all">
                         <span>Daftar</span>
                     </a>
                 </nav>

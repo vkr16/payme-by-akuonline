@@ -453,7 +453,7 @@
                     <div class="text-sm font-bold text-emerald-950">Mulai Buat Akun Penagih Sekarang</div>
                     <div class="text-xs text-emerald-800">100% Gratis &bull; Tanpa batasan tagihan &bull; Siap dalam 1 menit</div>
                 </div>
-                <a href="#" class="touch-target w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-xs sm:text-sm font-semibold btn-primary shadow-xs">
+                <a href="{{ route('register') }}" class="touch-target w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-xs sm:text-sm font-semibold btn-primary shadow-xs">
                     <span>Mulai Gratis Sekarang</span>
                     <i class="fa-light fa-arrow-right text-xs"></i>
                 </a>
@@ -569,7 +569,7 @@
                 Mulai hitung struk lebih adil dan pembayaran lebih praktis pakai QRIS dinamis.
             </p>
             <div class="pt-2">
-                <a href="#daftar" class="touch-target inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold btn-primary shadow-xs">
+                <a href="{{ route('register') }}" class="touch-target inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold btn-primary shadow-xs">
                     <span>Mulai Gratis Sekarang</span>
                     <i class="fa-light fa-arrow-right text-xs"></i>
                 </a>
