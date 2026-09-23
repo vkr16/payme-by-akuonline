@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
+
+@theme {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Crisp Precision Emerald */
+    --color-emerald-50: #f0fdf4;
+    --color-emerald-100: #dcfce7;
+    --color-emerald-200: #bbf7d0;
+    --color-emerald-300: #86efac;
+    --color-emerald-400: #4ade80;
+    --color-emerald-500: #22c55e;
+    --color-emerald-600: #16a34a;
+    --color-emerald-700: #15803d;
+    --color-emerald-800: #166534;
+    --color-emerald-900: #14532d;
+    --color-emerald-950: #052e16;
+
+    /* Subtle Botanical Neutral Canvas Tint (Delicate Sage/Mint Off-White) */
+    --color-canvas: #f4f7f5;
+}
+
+/* Base utility layers */
+@layer utilities {
+    .tabular-nums {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Ambient subtle greenish neutral canvas */
+    .bg-canvas {
+        background-color: #f4f7f5;
+    }
+
+    /* Crisp Card: Solid white, razor-sharp 1px border, subtle micro shadow */
+    .card-solid {
+        background-color: #ffffff;
+        border: 1px solid rgba(226, 232, 229, 0.95);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+    }
+
+    /* Selective Glass Header (Soft botanical neutral with blur) */
+    .glass-header {
+        background: rgba(244, 247, 245, 0.88);
+        backdrop-filter: blur(12px) saturate(160%);
+        -webkit-backdrop-filter: blur(12px) saturate(160%);
+        border-bottom: 1px solid rgba(226, 232, 229, 0.9);
+    }
+
+    /* Selective Floating Glass Card (e.g. sticky summary/checkout bar) */
+    .glass-surface {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(228, 228, 231, 0.9);
+        box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Flat Precision Button (Emerald-800 with hover emerald-700) */
+    .btn-primary {
+        background-color: #065f46; /* emerald-800 */
+        border: 1px solid #047857; /* emerald-700 */
+        color: #ffffff;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        transition: all 0.15s ease-in-out;
+    }
+
+    .btn-primary:hover {
+        background-color: #047857; /* emerald-700 */
+        border-color: #065f46;
+    }
+
+    .btn-primary:active {
+        background-color: #064e3b; /* emerald-900 */
+        border-color: #022c22;
+        transform: translateY(0.5px);
+    }
+
+    /* Interactive hover card */
+    .card-interactive {
+        background-color: #ffffff;
+        border: 1px solid rgba(228, 228, 231, 0.9);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card-interactive:hover {
+        border-color: rgba(161, 161, 170, 0.85);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Nested inset container for data density */
+    .card-nested {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* Touch target for mobile fingers */
+    .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* Authentic Rubber Stamp Effect (Tactile & Clean) */
+@keyframes stampDrop {
+    0% {
+        transform: scale(2.0) rotate(-24deg);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(0.97) rotate(-9deg);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(1) rotate(-11deg);
+        opacity: 0.92;
+    }
+}
+
+.stamp-lunas {
+    border: 4px double #15803d;
+    color: #15803d;
+    background-color: rgba(240, 253, 244, 0.85);
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+    transform: rotate(-11deg);
+    display: inline-block;
+    user-select: none;
+}
+
+.stamp-lunas-animate {
+    animation: stampDrop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
