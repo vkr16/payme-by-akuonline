@@ -1,0 +1,54 @@
+{
+  "name": "PayMe by AkuOnline",
+  "short_name": "PayMe",
+  "description": "Split Bill Lebih Adil, Bayar Pakai QRIS Lebih Praktis",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F9FAF8",
+  "theme_color": "#064E3B",
+  "categories": ["finance", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Buka Dashboard",
+      "short_name": "Dashboard",
+      "description": "Kelola rekening dan tagihan patungan aktif",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Kalkulator / Simulator",
+      "short_name": "Simulator",
+      "description": "Simulasi bagi tagihan proporsional murni",
+      "url": "/#simulator",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

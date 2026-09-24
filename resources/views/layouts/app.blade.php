@@ -13,9 +13,17 @@
     <meta property="og:image" content="{{ asset('images/scan-qr-code.svg') }}">
     <meta property="og:type" content="website">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ asset('images/scan-qr-code.svg') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/scan-qr-code.svg') }}">
+    <!-- PWA Primary & Mobile Capabilities -->
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="theme-color" content="#064E3B">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PayMe">
+
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/png" href="{{ asset('icons/icon-192x192.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
 
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,7 +47,7 @@
             <div class="flex items-center justify-between h-16">
                 <!-- Brand Logo & Name -->
                 <div class="flex items-center gap-3">
-                    <a href="{{ url('/') }}" class="flex items-center gap-2.5 group">
+                    <a href="{{ auth()->check() ? route('dashboard') : url('/') }}" class="flex items-center gap-2.5 group">
                         <div class="w-8 h-8 rounded-lg bg-emerald-800 text-white flex items-center justify-center shadow-2xs transition-transform group-hover:scale-105">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M17 12v4a1 1 0 0 1-1 1h-4"/>
@@ -59,15 +67,30 @@
                     </a>
                 </div>
 
-                <!-- Navigation Actions (Login & Register for Hosts) -->
+                <!-- Navigation Actions (Dynamic Auth / Guest) -->
                 <nav class="flex items-center gap-2 sm:gap-3">
-                    <a href="{{ route('login') }}" class="touch-target inline-flex items-center px-3.5 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('login') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors">
-                        Masuk
-                    </a>
+                    @auth
+                        <a href="{{ route('dashboard') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('dashboard') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors">
+                            <i class="fa-light fa-grid-2 text-xs"></i>
+                            <span>Dashboard</span>
+                        </a>
 
-                    <a href="{{ route('register') }}" class="touch-target inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg btn-primary transition-all">
-                        <span>Daftar</span>
-                    </a>
+                        <form action="{{ route('logout') }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-zinc-500 hover:text-rose-700 hover:bg-rose-50/70 rounded-lg transition-colors cursor-pointer" title="Keluar dari akun">
+                                <i class="fa-light fa-arrow-right-from-bracket text-xs"></i>
+                                <span class="hidden sm:inline">Keluar</span>
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="touch-target inline-flex items-center px-3.5 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('login') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors">
+                            Masuk
+                        </a>
+
+                        <a href="{{ route('register') }}" class="touch-target inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg btn-primary transition-all">
+                            <span>Daftar</span>
+                        </a>
+                    @endauth
                 </nav>
             </div>
         </div>
@@ -77,7 +100,7 @@
     <main class="flex-grow w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <!-- Flash Alert Messages -->
         @if(session('success'))
-            <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start gap-3">
+            <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start gap-3 shadow-2xs">
                 <i class="fa-light fa-circle-check text-emerald-600 text-base mt-0.5 flex-shrink-0"></i>
                 <div class="text-sm font-medium">
                     {{ session('success') }}
@@ -86,7 +109,7 @@
         @endif
 
         @if(session('error'))
-            <div class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-3">
+            <div class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-3 shadow-2xs">
                 <i class="fa-light fa-circle-exclamation text-rose-600 text-base mt-0.5 flex-shrink-0"></i>
                 <div class="text-sm font-medium">
                     {{ session('error') }}

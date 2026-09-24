@@ -31,7 +31,7 @@
             </div>
 
             <!-- Form Registrasi Email & Password -->
-            <form action="#" method="POST" class="space-y-4">
+            <form action="{{ route('register.store') }}" method="POST" class="space-y-4">
                 @csrf
 
                 <!-- Input: Nama Lengkap / Panggilan -->
@@ -43,9 +43,15 @@
                         <span class="absolute left-3.5 text-zinc-400 pointer-events-none text-xs">
                             <i class="fa-light fa-user"></i>
                         </span>
-                        <input type="text" id="name" name="name" required autocomplete="name" placeholder="Contoh: Fikri M" class="touch-target w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-white border border-zinc-300 rounded-xl focus:outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 text-zinc-900 placeholder:text-zinc-400 transition-colors">
+                        <input type="text" id="name" name="name" value="{{ old('name') }}" required autocomplete="name" placeholder="Contoh: Fikri M" class="touch-target w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-white border @error('name') border-rose-400 focus:border-rose-500 focus:ring-rose-500/20 @else border-zinc-300 focus:border-emerald-700 focus:ring-emerald-700/10 @enderror rounded-xl focus:outline-none focus:ring-2 text-zinc-900 placeholder:text-zinc-400 transition-colors">
                     </div>
                     <span class="text-[10px] text-zinc-400 block">Nama ini akan dilihat temanmu di halaman tagihan patungan.</span>
+                    @error('name')
+                        <p class="text-[11px] text-rose-600 font-medium flex items-center gap-1 mt-1">
+                            <i class="fa-light fa-circle-exclamation"></i>
+                            <span>{{ $message }}</span>
+                        </p>
+                    @enderror
                 </div>
 
                 <!-- Input: Email -->
@@ -57,8 +63,14 @@
                         <span class="absolute left-3.5 text-zinc-400 pointer-events-none text-xs">
                             <i class="fa-light fa-envelope"></i>
                         </span>
-                        <input type="email" id="email" name="email" required autocomplete="email" placeholder="nama@email.com" class="touch-target w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-white border border-zinc-300 rounded-xl focus:outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 text-zinc-900 placeholder:text-zinc-400 transition-colors">
+                        <input type="email" id="email" name="email" value="{{ old('email') }}" required autocomplete="email" inputmode="email" placeholder="nama@email.com" class="touch-target w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-white border @error('email') border-rose-400 focus:border-rose-500 focus:ring-rose-500/20 @else border-zinc-300 focus:border-emerald-700 focus:ring-emerald-700/10 @enderror rounded-xl focus:outline-none focus:ring-2 text-zinc-900 placeholder:text-zinc-400 transition-colors">
                     </div>
+                    @error('email')
+                        <p class="text-[11px] text-rose-600 font-medium flex items-center gap-1 mt-1">
+                            <i class="fa-light fa-circle-exclamation"></i>
+                            <span>{{ $message }}</span>
+                        </p>
+                    @enderror
                 </div>
 
                 <!-- Input: Password -->
@@ -70,11 +82,17 @@
                         <span class="absolute left-3.5 text-zinc-400 pointer-events-none text-xs">
                             <i class="fa-light fa-lock-keyhole"></i>
                         </span>
-                        <input type="password" id="password" name="password" required autocomplete="new-password" placeholder="Minimal 8 karakter" class="touch-target w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm bg-white border border-zinc-300 rounded-xl focus:outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 text-zinc-900 placeholder:text-zinc-400 transition-colors">
+                        <input type="password" id="password" name="password" required autocomplete="new-password" placeholder="Minimal 8 karakter" class="touch-target w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm bg-white border @error('password') border-rose-400 focus:border-rose-500 focus:ring-rose-500/20 @else border-zinc-300 focus:border-emerald-700 focus:ring-emerald-700/10 @enderror rounded-xl focus:outline-none focus:ring-2 text-zinc-900 placeholder:text-zinc-400 transition-colors">
                         <button type="button" id="toggleRegPasswordBtn" class="touch-target absolute right-2.5 w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-zinc-700 transition-colors" title="Lihat/Sembunyikan Kata Sandi">
                             <i class="fa-light fa-eye text-xs" id="toggleRegPasswordIcon"></i>
                         </button>
                     </div>
+                    @error('password')
+                        <p class="text-[11px] text-rose-600 font-medium flex items-center gap-1 mt-1">
+                            <i class="fa-light fa-circle-exclamation"></i>
+                            <span>{{ $message }}</span>
+                        </p>
+                    @enderror
                 </div>
 
                 <!-- Input: Password Confirmation -->
