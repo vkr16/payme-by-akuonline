@@ -5,6 +5,40 @@ namespace App\Services;
 class QrisService
 {
     /**
+     * Parse raw EMVCo payload into Tag-Length-Value (TLV) key-value map.
+     *
+     * @return array<string, string>
+     */
+    public function parseEmvcoTlv(string $payload): array
+    {
+        $tags = [];
+        $offset = 0;
+        $len = strlen($payload);
+
+        while ($offset + 4 <= $len) {
+            $tag = substr($payload, $offset, 2);
+            $valLenStr = substr($payload, $offset + 2, 2);
+
+            if (! ctype_digit($valLenStr)) {
+                break;
+            }
+
+            $valLen = (int) $valLenStr;
+            $offset += 4;
+
+            if ($offset + $valLen > $len) {
+                $tags[$tag] = substr($payload, $offset);
+                break;
+            }
+
+            $tags[$tag] = substr($payload, $offset, $valLen);
+            $offset += $valLen;
+        }
+
+        return $tags;
+    }
+
+    /**
      * Validate if string is a standard EMVCo QRIS payload.
      */
     public function isValidQris(string $qrisCode): bool
@@ -19,13 +53,16 @@ class QrisService
             return false;
         }
 
-        // Must contain Indonesian country code tag (5802ID) or IDR currency tag (5303360)
-        if (! str_contains($code, '5802ID') && ! str_contains($code, '5303360')) {
+        $tlv = $this->parseEmvcoTlv($code);
+
+        // Must have format indicator (Tag 00)
+        if (! isset($tlv['00']) || $tlv['00'] !== '01') {
             return false;
         }
 
-        // Must contain Merchant Name tag (Tag 59)
-        if (! preg_match('/59(\d{2})([^\d]{2,})/', $code)) {
+        // Must contain Indonesian country code tag (5802ID) or IDR currency tag (5303360)
+        $hasCountryOrCurrency = (isset($tlv['58']) && $tlv['58'] === 'ID') || (isset($tlv['53']) && $tlv['53'] === '360');
+        if (! $hasCountryOrCurrency && ! str_contains($code, '5802ID') && ! str_contains($code, '5303360')) {
             return false;
         }
 
@@ -39,24 +76,54 @@ class QrisService
      */
     public function extractMerchantInfo(string $qrisCode): array
     {
-        $merchantName = 'Tidak diketahui';
-        $merchantLocation = 'Tidak diketahui';
+        $merchantName = 'Merchant QRIS';
+        $merchantCity = 'Indonesia';
+        $code = trim($qrisCode);
 
-        // Tag 59: Merchant Name
-        if (preg_match('/59(\d{2})([^\d]{2,})/', $qrisCode, $nameMatch)) {
-            $len = (int) $nameMatch[1];
-            $merchantName = substr($nameMatch[2], 0, $len);
+        // 1. Primary: Parse sequential TLV tags immediately following the mandatory 5802ID anchor
+        $pos58 = strpos($code, '5802ID');
+        if ($pos58 !== false) {
+            $afterCountry = substr($code, $pos58 + 6);
+            $offset = 0;
+            $afterLen = strlen($afterCountry);
+
+            while ($offset + 4 <= $afterLen) {
+                $tag = substr($afterCountry, $offset, 2);
+                $valLenStr = substr($afterCountry, $offset + 2, 2);
+
+                if (! ctype_digit($valLenStr)) {
+                    break;
+                }
+
+                $valLen = (int) $valLenStr;
+                $offset += 4;
+                $val = substr($afterCountry, $offset, $valLen);
+                $offset += $valLen;
+
+                if ($tag === '59') {
+                    $merchantName = $val;
+                } elseif ($tag === '60') {
+                    $merchantCity = $val;
+                } elseif ($tag === '63') {
+                    break;
+                }
+            }
         }
 
-        // Tag 60: Merchant Location / City
-        if (preg_match('/60(\d{2})([^\d]{2,})/', $qrisCode, $locMatch)) {
-            $len = (int) $locMatch[1];
-            $merchantLocation = substr($locMatch[2], 0, $len);
+        // 2. Secondary fallback: Full root TLV parse if anchor parsing didn't find either
+        if ($merchantName === 'Merchant QRIS' || $merchantCity === 'Indonesia') {
+            $tlv = $this->parseEmvcoTlv($code);
+            if (! empty($tlv['59']) && $merchantName === 'Merchant QRIS') {
+                $merchantName = $tlv['59'];
+            }
+            if (! empty($tlv['60']) && $merchantCity === 'Indonesia') {
+                $merchantCity = $tlv['60'];
+            }
         }
 
         return [
             'merchant_name' => trim($merchantName),
-            'merchant_city' => trim($merchantLocation),
+            'merchant_city' => trim($merchantCity),
         ];
     }
 

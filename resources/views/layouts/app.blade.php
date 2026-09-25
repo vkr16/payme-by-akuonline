@@ -68,9 +68,9 @@
                 </div>
 
                 <!-- Navigation Actions (Dynamic Auth / Guest) -->
-                <nav class="flex items-center gap-2 sm:gap-3">
+                <nav class="flex items-center gap-1 sm:gap-2">
                     @auth
-                        <a href="{{ route('dashboard') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('dashboard') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors">
+                        <a href="{{ route('dashboard') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('dashboard') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors" title="Dashboard">
                             <i class="fa-light fa-grid-2 text-xs"></i>
                             <span>Dashboard</span>
                         </a>
@@ -83,11 +83,11 @@
                             </button>
                         </form>
                     @else
-                        <a href="{{ route('login') }}" class="touch-target inline-flex items-center px-3.5 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('login') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors">
+                        <a href="{{ route('login') }}" class="touch-target inline-flex items-center px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('login') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors">
                             Masuk
                         </a>
 
-                        <a href="{{ route('register') }}" class="touch-target inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg btn-primary transition-all">
+                        <a href="{{ route('register') }}" class="touch-target inline-flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg btn-primary transition-all">
                             <span>Daftar</span>
                         </a>
                     @endauth
@@ -138,6 +138,69 @@
             </div>
         </div>
     </footer>
+
+    <!-- Notiflix Notification & Modal Suite -->
+    <script src="{{ asset('vendor/notiflix/notiflix.min.js') }}"></script>
+    <script>
+        if (window.Notiflix) {
+            Notiflix.Notify.init({
+                position: 'right-top',
+                cssAnimationStyle: 'from-top',
+                useIcon: true,
+                fontFamily: 'inherit',
+                borderRadius: '12px',
+                success: {
+                    background: '#064E3B',
+                    textColor: '#FFFFFF',
+                    childClassName: 'notiflix-notify-success',
+                    notiflixIconColor: '#FFFFFF',
+                },
+                failure: {
+                    background: '#E11D48',
+                    textColor: '#FFFFFF',
+                },
+                warning: {
+                    background: '#D97706',
+                    textColor: '#FFFFFF',
+                }
+            });
+
+            Notiflix.Loading.init({
+                svgColor: '#064E3B',
+                backgroundColor: 'rgba(255,255,255,0.75)',
+                messageColor: '#064E3B',
+                fontFamily: 'inherit',
+            });
+
+            Notiflix.Confirm.init({
+                borderRadius: '16px',
+                titleColor: '#064E3B',
+                okButtonBackground: '#064E3B',
+                cancelButtonBackground: '#F4F4F5',
+                cancelButtonColor: '#3F3F46',
+                fontFamily: 'inherit',
+            });
+        }
+
+        window.showPageLoading = function(message = 'Memuat ulang data terbaru...') {
+            if (window.Notiflix) {
+                Notiflix.Loading.pulse(message);
+            }
+        };
+        window.hidePageLoading = function() {
+            if (window.Notiflix) {
+                Notiflix.Loading.remove();
+            }
+        };
+
+        // Automatic smooth loading overlay for standard POST transitions
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+            if (form && form.method && form.method.toUpperCase() === 'POST' && !form.dataset.ajax) {
+                window.showPageLoading('Sedang memproses...');
+            }
+        });
+    </script>
 
     @yield('scripts')
     @stack('scripts')

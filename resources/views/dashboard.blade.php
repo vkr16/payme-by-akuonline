@@ -47,31 +47,39 @@
         </div>
 
         <!-- Card 2: Status QRIS -->
-        <div class="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs">
+        <a href="{{ route('payment_methods.index') }}" class="group p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs hover:border-emerald-600/70 transition-all block">
             <div class="flex items-center justify-between text-zinc-400 mb-2">
                 <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">QRIS Terhubung</span>
-                <i class="fa-light fa-qrcode text-lg text-zinc-700"></i>
+                <i class="fa-light fa-qrcode text-lg text-emerald-800 group-hover:scale-110 transition-transform"></i>
             </div>
-            <div class="text-sm font-bold {{ $hasQris ? 'text-emerald-800' : 'text-zinc-800' }} mt-1">
-                {{ $hasQris ? 'Aktif di Database' : 'Belum Tersimpan' }}
+            <div class="flex items-baseline justify-between">
+                <div class="text-2xl font-black text-zinc-900 tabular-nums">{{ $qrisCount }}</div>
+                <span class="text-xs font-bold text-emerald-700 group-hover:underline flex items-center gap-1">
+                    <span>Kelola</span>
+                    <i class="fa-light fa-arrow-right text-[10px]"></i>
+                </span>
             </div>
-            <span class="text-[11px] text-zinc-400 mt-1 block">Otomatis dipakai saat buat bill</span>
-        </div>
+            <span class="text-[11px] text-zinc-400 mt-1 block">{{ $qrisCount > 0 ? $qrisCount . ' QRIS statis terdaftar' : 'Belum ada QRIS tersimpan' }}</span>
+        </a>
 
         <!-- Card 3: Rekening Bank -->
-        <div class="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs">
+        <a href="{{ route('payment_methods.index') }}" class="group p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs hover:border-emerald-600/70 transition-all block">
             <div class="flex items-center justify-between text-zinc-400 mb-2">
                 <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Metode Bank / E-Wallet</span>
-                <i class="fa-light fa-building-columns text-lg text-zinc-700"></i>
+                <i class="fa-light fa-building-columns text-lg text-emerald-800 group-hover:scale-110 transition-transform"></i>
             </div>
-            <div class="text-sm font-bold {{ $hasBank ? 'text-emerald-800' : 'text-zinc-800' }} mt-1">
-                {{ $hasBank ? 'Tersimpan' : 'Belum Tersimpan' }}
+            <div class="flex items-baseline justify-between">
+                <div class="text-2xl font-black text-zinc-900 tabular-nums">{{ $bankCount }}</div>
+                <span class="text-xs font-bold text-emerald-700 group-hover:underline flex items-center gap-1">
+                    <span>Kelola</span>
+                    <i class="fa-light fa-arrow-right text-[10px]"></i>
+                </span>
             </div>
-            <span class="text-[11px] text-zinc-400 mt-1 block">Pilihan transfer kawan patungan</span>
-        </div>
+            <span class="text-[11px] text-zinc-400 mt-1 block">{{ $bankCount > 0 ? $bankCount . ' rekening & e-wallet tersimpan' : 'Belum ada rekening tersimpan' }}</span>
+        </a>
     </div>
 
-    <!-- Riwayat Tagihan Aktif -->
+    <!-- Riwayat Tagihan -->
     @if($bills->count() > 0)
         <div class="card-solid rounded-2xl p-6 bg-white border border-zinc-200/90 shadow-sm space-y-4">
             <div class="flex items-center justify-between">
@@ -79,20 +87,46 @@
                     <i class="fa-light fa-clock-rotate-left text-emerald-700"></i>
                     <span>Tagihan Patungan Kamu</span>
                 </h2>
-                <span class="text-xs font-semibold text-zinc-500">{{ $bills->count() }} tagihan</span>
+                <div class="text-xs font-semibold text-zinc-500">
+                    <span class="text-emerald-800 font-bold">{{ $settledBillsCount }} Selesai</span>
+                    <span class="text-zinc-300 mx-1">&bull;</span>
+                    <span>{{ $totalBills - $settledBillsCount }} Berlangsung</span>
+                </div>
             </div>
 
             <div class="divide-y divide-zinc-100">
                 @foreach($bills as $bill)
+                    @php
+                        $isSettled = $bill->isFullySettled();
+                        $pendingClaimsCount = $bill->claims->where('status', 'pending')->count();
+                    @endphp
                     <div class="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 first:pt-0 last:pb-0">
                         <div class="space-y-1">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <a href="{{ route('bills.show', ['slug' => $bill->slug]) }}" class="font-bold text-zinc-900 hover:text-emerald-800 text-sm transition-colors">
                                     {{ $bill->title }}
                                 </a>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-                                    Aktif
-                                </span>
+                                @if($isSettled)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/70">
+                                        <i class="fa-light fa-circle-check text-[11px]"></i>
+                                        <span>Selesai (Lunas)</span>
+                                    </span>
+                                @elseif($pendingClaimsCount > 0)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/70">
+                                        <i class="fa-light fa-clock text-[11px]"></i>
+                                        <span>Menunggu Konfirmasi ({{ $pendingClaimsCount }})</span>
+                                    </span>
+                                @elseif($bill->total_confirmed_paid > 0)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200/70">
+                                        <i class="fa-light fa-chart-pie text-[11px]"></i>
+                                        <span>Sebagian ({{ $bill->progress_percentage }}%)</span>
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200/70">
+                                        <i class="fa-light fa-bolt text-[11px]"></i>
+                                        <span>Aktif</span>
+                                    </span>
+                                @endif
                             </div>
                             <div class="text-xs text-zinc-500 flex items-center gap-3">
                                 <span><i class="fa-light fa-calendar text-[11px] mr-1"></i>{{ $bill->created_at->translatedFormat('d M Y') }}</span>

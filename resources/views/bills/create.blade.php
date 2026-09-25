@@ -728,6 +728,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Form Submit Loading Feedback
+    const createBillForm = document.getElementById('createBillForm');
+    if (createBillForm) {
+        createBillForm.addEventListener('submit', function () {
+            const btnSubmit = document.getElementById('btnSubmitBill');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.classList.add('opacity-50', 'pointer-events-none');
+            }
+            if (window.Notiflix) {
+                Notiflix.Loading.pulse('Menyimpan & menyiapkan tagihan patungan...');
+            }
+        });
+    }
+
     // Initialize with 1 empty item row by default
     addItemRow('', 1, 0);
 });

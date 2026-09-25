@@ -104,6 +104,15 @@
         min-height: 44px;
         min-width: 44px;
     }
+
+    /* Hide scrollbars while maintaining scroll functionality */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
 }
 
 /* Authentic Rubber Stamp Effect (Tactile & Clean) */

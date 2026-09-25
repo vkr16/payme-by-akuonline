@@ -15,17 +15,21 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        $bills = $user->bills()->with(['items', 'banks'])->latest()->get();
+        $bills = $user->bills()->with(['items', 'banks', 'claims'])->latest()->get();
         $totalBills = $bills->count();
-        $hasQris = $user->qris()->exists();
-        $hasBank = $user->banks()->exists();
+        $settledBillsCount = $bills->filter(fn ($b) => $b->isFullySettled())->count();
+        $qrisCount = $user->qris()->count();
+        $bankCount = $user->banks()->count();
 
         return view('dashboard', [
             'user' => $user,
             'bills' => $bills,
             'totalBills' => $totalBills,
-            'hasQris' => $hasQris,
-            'hasBank' => $hasBank,
+            'settledBillsCount' => $settledBillsCount,
+            'qrisCount' => $qrisCount,
+            'bankCount' => $bankCount,
+            'hasQris' => $qrisCount > 0,
+            'hasBank' => $bankCount > 0,
         ]);
     }
 }

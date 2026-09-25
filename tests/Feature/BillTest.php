@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Bill;
+use App\Models\BillClaim;
+use App\Models\BillItem;
 use App\Models\User;
 use App\Models\UserBank;
 use App\Models\UserQris;
@@ -179,6 +181,344 @@ class BillTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Acara Ultah Kantor');
-        $response->assertSee('Salin Tautan Patungan');
+        $response->assertSee('Salin Tautan');
+    }
+
+    public function test_participant_can_calculate_selection_with_proportional_fees(): void
+    {
+        $bill = Bill::factory()->create([
+            'delivery_fee' => 10000,
+            'service_fee' => 2000,
+            'discount' => 2000,
+        ]);
+
+        $item1 = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'name' => 'Nasi Goreng',
+            'qty' => 2,
+            'price' => 20000, // Total 40000
+        ]);
+
+        $item2 = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'name' => 'Es Jeruk',
+            'qty' => 2,
+            'price' => 5000, // Total 10000. Total bill items = 50000
+        ]);
+
+        // Participant selects 1x Nasi Goreng (20000 out of 50000 = 40%)
+        // Net fees: 10000 + 2000 - 2000 = 10000. 40% of 10000 = 4000.
+        // Total expected: 20000 + 4000 = 24000
+        $response = $this->postJson('/b/'.$bill->slug.'/calculate', [
+            'items' => [
+                $item1->id => 1,
+            ],
+            'round_up' => false,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'items_subtotal' => 20000,
+            'total_payable' => 24000,
+        ]);
+    }
+
+    public function test_participant_can_claim_payment(): void
+    {
+        $bill = Bill::factory()->create();
+        $item = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'name' => 'Mie Ayam',
+            'qty' => 2,
+            'price' => 15000,
+        ]);
+
+        $response = $this->postJson('/b/'.$bill->slug.'/claim', [
+            'payer_name' => 'Budi Santoso',
+            'payment_method' => 'qris',
+            'items' => [
+                $item->id => 1,
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+        ]);
+
+        $this->assertDatabaseHas('bill_claims', [
+            'bill_id' => $bill->id,
+            'payer_name' => 'Budi Santoso',
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_host_can_confirm_and_reject_payment_claims(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create(['user_id' => $host->id]);
+        $item = BillItem::factory()->create(['bill_id' => $bill->id, 'price' => 25000]);
+
+        $claim = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Andi',
+            'amount' => 25000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        // Host confirms claim
+        $confirmResponse = $this->actingAs($host)->post("/b/{$bill->slug}/claims/{$claim->id}/confirm");
+        $confirmResponse->assertRedirect();
+        $this->assertEquals('confirmed', $claim->fresh()->status);
+
+        // Host rejects/deletes claim
+        $rejectResponse = $this->actingAs($host)->delete("/b/{$bill->slug}/claims/{$claim->id}/reject");
+        $rejectResponse->assertRedirect();
+        $this->assertDatabaseMissing('bill_claims', ['id' => $claim->id]);
+    }
+
+    public function test_duplicate_payer_name_on_same_bill_is_rejected(): void
+    {
+        $bill = Bill::factory()->create();
+        $item = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'name' => 'Kopi Tubruk',
+            'qty' => 5,
+            'price' => 10000,
+        ]);
+
+        // First claim
+        $firstResponse = $this->postJson("/b/{$bill->slug}/claim", [
+            'payer_name' => 'Ferry S',
+            'payment_method' => 'qris',
+            'items' => [
+                $item->id => 1,
+            ],
+        ]);
+        $firstResponse->assertStatus(200);
+
+        // Duplicate claim with same name (case-insensitive & trimmed) is rejected
+        $dupResponse = $this->postJson("/b/{$bill->slug}/claim", [
+            'payer_name' => '  ferry s  ',
+            'payment_method' => 'qris',
+            'items' => [
+                $item->id => 1,
+            ],
+        ]);
+        $dupResponse->assertStatus(422);
+        $dupResponse->assertJson([
+            'success' => false,
+        ]);
+        $this->assertStringContainsString('sudah terdaftar', $dupResponse->json('message'));
+    }
+
+    public function test_host_can_confirm_and_reject_payment_claims_via_ajax(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create(['user_id' => $host->id]);
+
+        $claim = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Doni',
+            'amount' => 50000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        // AJAX Confirm
+        $confirmResponse = $this->actingAs($host)->postJson("/b/{$bill->slug}/claims/{$claim->id}/confirm");
+        $confirmResponse->assertStatus(200);
+        $confirmResponse->assertJson([
+            'success' => true,
+            'status' => 'confirmed',
+            'bill_summary' => [
+                'total_confirmed_paid' => 50000,
+            ],
+        ]);
+        $this->assertEquals('confirmed', $claim->fresh()->status);
+
+        // AJAX Reject
+        $rejectResponse = $this->actingAs($host)->deleteJson("/b/{$bill->slug}/claims/{$claim->id}/reject");
+        $rejectResponse->assertStatus(200);
+        $rejectResponse->assertJson([
+            'success' => true,
+            'claim_id' => $claim->id,
+            'bill_summary' => [
+                'total_confirmed_paid' => 0,
+            ],
+        ]);
+        $this->assertDatabaseMissing('bill_claims', ['id' => $claim->id]);
+    }
+
+    public function test_bill_claim_provides_detail_array_for_modal_popup(): void
+    {
+        $bill = Bill::factory()->create([
+            'delivery_fee' => 10000,
+            'service_fee' => 2000,
+            'discount' => 2000,
+        ]);
+
+        $item = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'name' => 'Soto Ayam',
+            'qty' => 2,
+            'price' => 25000,
+        ]);
+
+        $claim = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Sari',
+            'amount' => 35000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        $claim->claimItems()->create([
+            'bill_item_id' => $item->id,
+            'qty' => 1,
+        ]);
+
+        $detail = $claim->toDetailArray();
+
+        $this->assertEquals('Sari', $detail['payer_name']);
+        $this->assertEquals(25000, $detail['items_subtotal']);
+        $this->assertCount(1, $detail['items']);
+        $this->assertEquals('Soto Ayam', $detail['items'][0]['name']);
+        $this->assertEquals($item->id, $detail['items'][0]['item_id']);
+        $this->assertArrayHasKey('proportion_percent', $detail);
+        $this->assertArrayHasKey('share_delivery', $detail);
+        $this->assertArrayHasKey('share_service', $detail);
+        $this->assertArrayHasKey('share_discount', $detail);
+    }
+
+    public function test_host_can_batch_confirm_selected_claims(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create(['user_id' => $host->id]);
+
+        $claim1 = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Budi',
+            'amount' => 15000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        $claim2 = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Siti',
+            'amount' => 20000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        $claim3 = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Joko',
+            'amount' => 30000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        // Host batch confirms claim1 and claim3 only
+        $response = $this->actingAs($host)->postJson("/b/{$bill->slug}/claims/batch-confirm", [
+            'claim_ids' => [$claim1->id, $claim3->id],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'confirmed_count' => 2,
+            'total_amount' => 45000,
+            'bill_summary' => [
+                'total_confirmed_paid' => 45000,
+            ],
+        ]);
+
+        $this->assertEquals('confirmed', $claim1->fresh()->status);
+        $this->assertEquals('pending', $claim2->fresh()->status);
+        $this->assertEquals('confirmed', $claim3->fresh()->status);
+    }
+
+    public function test_non_host_cannot_batch_confirm_claims(): void
+    {
+        $host = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $bill = Bill::factory()->create(['user_id' => $host->id]);
+
+        $claim = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Doni',
+            'amount' => 10000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($otherUser)->postJson("/b/{$bill->slug}/claims/batch-confirm", [
+            'claim_ids' => [$claim->id],
+        ]);
+
+        $response->assertStatus(404);
+        $this->assertEquals('pending', $claim->fresh()->status);
+    }
+
+    public function test_claim_actions_accurately_update_bill_summary_and_settlement_status(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create([
+            'user_id' => $host->id,
+            'delivery_fee' => 0,
+            'service_fee' => 0,
+            'discount' => 0,
+        ]);
+
+        $item = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'price' => 50000,
+            'qty' => 2,
+        ]);
+
+        // Total bill is 100,000
+        $this->assertEquals(100000, $bill->grand_total);
+        $this->assertEquals(0, $bill->total_confirmed_paid);
+        $this->assertFalse($bill->isFullySettled());
+
+        $claim = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Maya',
+            'amount' => 100000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        // Confirm claim -> should reach 100% and fully settled
+        $response = $this->actingAs($host)->postJson("/b/{$bill->slug}/claims/{$claim->id}/confirm");
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'bill_summary' => [
+                'grand_total' => 100000,
+                'total_confirmed_paid' => 100000,
+                'remaining_confirmed_amount' => 0,
+                'progress_percentage' => 100,
+                'is_fully_settled' => true,
+            ],
+        ]);
+
+        // Reject/delete the confirmed claim -> should drop back to 0% and not fully settled
+        $rejectResponse = $this->actingAs($host)->deleteJson("/b/{$bill->slug}/claims/{$claim->id}/reject");
+        $rejectResponse->assertStatus(200);
+        $rejectResponse->assertJson([
+            'success' => true,
+            'bill_summary' => [
+                'grand_total' => 100000,
+                'total_confirmed_paid' => 0,
+                'remaining_confirmed_amount' => 100000,
+                'progress_percentage' => 0,
+                'is_fully_settled' => false,
+            ],
+        ]);
     }
 }

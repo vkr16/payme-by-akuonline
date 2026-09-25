@@ -89,7 +89,11 @@ $$\text{Total Akhir Dibayar} = \text{Subtotal Item Pengguna} + \text{Biaya Tamba
 | `GET /bills/create` | `bills.create` | `resources/views/bills/create.blade.php` | Form Buat Patungan: Header ringkas (nama acara), AI receipt OCR dropzone, input manual tactile stepper, manajemen QRIS & rekening DB, live fee & discount calculations, sticky floating bottom bar. |
 | `POST /bills` | `bills.store` | Controller Action | Validasi data patungan, parsing & pembuatan bill, penyimpanan item, snapshot bank & QRIS, auto-save profile rekening. |
 | `POST /bills/parse-receipt` | `bills.parse_receipt` | Controller Action | Endpoint OCR NineRouter AI Vision untuk ekstraksi item struk belanja secara otomatis. |
-| `GET /b/{slug}` | `bills.show` | `resources/views/bills/show.blade.php` | Halaman Rincian Patungan: Ringkasan total tagihan, metode pembayaran QRIS & Bank dengan 1-click copy, daftar menu pesanan, share ke WhatsApp & copy tautan. |
+| `GET /b/{slug}` | `bills.show` | `resources/views/bills/show.blade.php` | Halaman Pembayaran Patungan: Pemilihan menu pesanan interaktif (stepper kuantitas), kalkulasi proporsional real-time, generate Dynamic QRIS nominal terkunci, modal klaim "Saya Sudah Bayar", dan khusus Host: antarmuka verifikasi & approval klaim kawan (Anti-Fake Claim). |
+| `POST /b/{slug}/calculate` | `bills.calculate` | Controller Action | AJAX endpoint kalkulasi proporsional subtotal item, alokasi ongkir/layanan/diskon, dan generate payload dynamic QRIS. |
+| `POST /b/{slug}/claim` | `bills.claim` | Controller Action | Pengajuan klaim pembayaran partisipan dengan status 'pending'. |
+| `POST /b/{slug}/claims/{claimId}/confirm` | `bills.claims.confirm` | Controller Action | Approval host: konfirmasi dana masuk dan mengubah status klaim menjadi 'confirmed'. |
+| `DELETE /b/{slug}/claims/{claimId}/reject` | `bills.claims.reject` | Controller Action | Penolakan / pembatalan klaim pembayaran oleh host. |
 
 ---
 
@@ -120,15 +124,18 @@ $$\text{Total Akhir Dibayar} = \text{Subtotal Item Pengguna} + \text{Biaya Tamba
    - **Database Models & Migrations:** `UserQris`, `UserBank`, `Bill`, `BillItem`, `BillBank`.
    - **Services:** [QrisService.php](file:///home/fikri/Development/payme/app/Services/QrisService.php) (EMVCo parser & dynamic QRIS generator) dan [ReceiptParserService.php](file:///home/fikri/Development/payme/app/Services/ReceiptParserService.php) (NineRouter Gemini Vision parser).
    - **Controller:** [BillController.php](file:///home/fikri/Development/payme/app/Http/Controllers/BillController.php) (`create`, `store`, `parseReceipt`, `show`).
-   - **Views:** [create.blade.php](file:///home/fikri/Development/payme/resources/views/bills/create.blade.php) & [show.blade.php](file:///home/fikri/Development/payme/resources/views/bills/show.blade.php).
-   - **Automated Tests:** [BillTest.php](file:///home/fikri/Development/payme/tests/Feature/BillTest.php) (8 passed tests, total suite: 16 passed tests).
+   - **Views:** [create.blade.php](file:///home/fikri/Development/payme/resources/views/bills/create.blade.php).
+7. **Halaman Pembayaran & Mekanisme Approval Host (Anti-Fake Claim):**
+   - **Database Models & Migrations:** `BillClaim` & `BillClaimItem` dengan tracking status `pending` dan `confirmed`.
+   - **Interaktif Pemilihan Menu:** Stepper kuantitas porsi pesanan dengan live calculation AJAX proporsionalitas ongkir/layanan/diskon.
+   - **Dynamic QRIS Modal:** Menghasilkan QR code SVG/canvas ber-nominal terkunci pas sesuai porsi yang dipilih partisipan.
+   - **Klaim Pembayaran ("Saya Sudah Bayar"):** Form modal input nama & metode bayar yang mencatat klaim ke database.
+   - **Host Claims Management:** Khusus user dengan sesi Host, muncul card approval untuk memverifikasi dana masuk ("Konfirmasi Dana Masuk" / "Tolak Klaim").
+   - **Automated Tests:** [BillTest.php](file:///home/fikri/Development/payme/tests/Feature/BillTest.php) (11 passed tests, total suite: 19 passed tests).
 
 ### 🚀 Roadmap Selanjutnya (Upcoming Work):
-1. **Public Bill Participant Page (Interactive Selection & Claims):**
-   - Halaman publik akses via `/b/{slug}` untuk teman memilih pesanan via stepper kuantitas.
-   - Generate Dynamic QRIS dengan nominal terkunci per klaim pesanan partisipan.
-   - Form klaim pembayaran (Teman Klaim $\rightarrow$ Host Konfirmasi di Dashboard).
-   - **Post-Payment "Buy Me a Coffee" Prompt:** Menampilkan card/tombol donasi traktir kopi untuk developer (`fa-light fa-mug-hot`) setelah pembayaran terverifikasi LUNAS.
-2. **Dashboard Host Realtime Claims Management:**
-   - Realtime tracking klaim pembayaran teman (Menunggu Verifikasi $\rightarrow$ Host Approve / Reject).
+1. **Post-Payment "Buy Me a Coffee" Prompt:**
+   - Menampilkan card/tombol manis apresiasi donasi/traktir kopi untuk developer (`fa-light fa-mug-hot`) setelah status pembayaran teman terverifikasi **LUNAS** (momen conversion donasi terbaik).
+2. **Dashboard Host Realtime Notification & Management:**
    - Halaman kelola profil rekening & QRIS mandiri (`/profile/accounts`).
+   - Polling / auto-refresh status klaim pada halaman bill.

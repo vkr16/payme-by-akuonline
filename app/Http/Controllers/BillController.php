@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bill;
 use App\Models\BillBank;
+use App\Models\BillClaim;
 use App\Models\BillItem;
 use App\Models\UserBank;
 use App\Models\UserQris;
@@ -243,14 +244,340 @@ class BillController extends Controller
     }
 
     /**
-     * Display public/host view of the bill.
+     * Display bill page for participants and host.
      */
     public function show(string $slug): View
     {
-        $bill = Bill::with(['user', 'items', 'banks'])->where('slug', $slug)->firstOrFail();
+        $bill = Bill::with([
+            'user',
+            'items.claimItems.claim',
+            'banks',
+            'claims.claimItems.item',
+        ])->where('slug', $slug)->firstOrFail();
+
+        $isHost = Auth::check() && Auth::id() === $bill->user_id;
+
+        $claimsDetailData = [];
+        foreach ($bill->claims as $claim) {
+            $claimsDetailData[$claim->id] = $claim->toDetailArray();
+        }
 
         return view('bills.show', [
             'bill' => $bill,
+            'isHost' => $isHost,
+            'claimsDetailData' => $claimsDetailData,
         ]);
+    }
+
+    /**
+     * Calculate nominal and dynamic QRIS payload for selected items.
+     */
+    public function calculateSelection(Request $request, string $slug, QrisService $qrisService): JsonResponse
+    {
+        $bill = Bill::with(['items.claimItems.claim'])->where('slug', $slug)->firstOrFail();
+
+        $selectedItems = $request->input('items', []); // [item_id => qty]
+        $roundUp = $request->boolean('round_up', false);
+
+        $itemsSubtotal = 0.0;
+        $itemsSelectedCount = 0;
+
+        foreach ($bill->items as $item) {
+            $claimedQty = (int) ($selectedItems[$item->id] ?? 0);
+            if ($claimedQty > 0) {
+                $validQty = min($claimedQty, $item->remaining_qty);
+                $itemsSubtotal += ($validQty * (float) $item->price);
+                $itemsSelectedCount += $validQty;
+            }
+        }
+
+        $totalBillSubtotal = $bill->items_subtotal;
+        $deliveryFeeShare = 0.0;
+        $serviceFeeShare = 0.0;
+        $discountShare = 0.0;
+        $feeShare = 0.0;
+
+        if ($totalBillSubtotal > 0 && $itemsSubtotal > 0) {
+            $proportion = $itemsSubtotal / $totalBillSubtotal;
+            $deliveryFeeShare = (float) round($proportion * (float) $bill->delivery_fee);
+            $serviceFeeShare = (float) round($proportion * (float) $bill->service_fee);
+            $discountShare = (float) round($proportion * (float) $bill->discount);
+            $feeShare = ($deliveryFeeShare + $serviceFeeShare) - $discountShare;
+        }
+
+        $exactPayable = (float) max(0, round($itemsSubtotal + $feeShare));
+        $totalPayable = $exactPayable;
+        $roundUpExtra = 0.0;
+
+        if ($roundUp && $exactPayable > 0) {
+            $rounded = (float) (ceil($exactPayable / 1000) * 1000);
+            $roundUpExtra = max(0, $rounded - $exactPayable);
+            $totalPayable = $rounded;
+        }
+
+        $dynamicQrisPayload = '';
+        if (! empty($bill->qris_payload) && $totalPayable > 0) {
+            $dynamicQrisPayload = $qrisService->convertToDynamic($bill->qris_payload, $totalPayable);
+        }
+
+        return response()->json([
+            'success' => true,
+            'items_subtotal' => $itemsSubtotal,
+            'items_count' => $itemsSelectedCount,
+            'fee_share' => $feeShare,
+            'delivery_fee_share' => $deliveryFeeShare,
+            'service_fee_share' => $serviceFeeShare,
+            'discount_share' => $discountShare,
+            'exact_payable' => $exactPayable,
+            'round_up_extra' => $roundUpExtra,
+            'total_payable' => $totalPayable,
+            'proportion_percent' => $totalBillSubtotal > 0 ? round(($itemsSubtotal / $totalBillSubtotal) * 100, 1) : 0,
+            'dynamic_qris_payload' => $dynamicQrisPayload,
+        ]);
+    }
+
+    /**
+     * Submit payment claim ("Saya Sudah Bayar").
+     */
+    public function claimPayment(Request $request, string $slug): JsonResponse
+    {
+        $bill = Bill::with(['items.claimItems.claim'])->where('slug', $slug)->firstOrFail();
+
+        $validated = $request->validate([
+            'payer_name' => ['required', 'string', 'max:100'],
+            'payment_method' => ['nullable', 'string', 'max:50'],
+            'actual_amount' => ['nullable', 'numeric', 'min:0'],
+            'round_up' => ['nullable', 'boolean'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*' => ['required', 'integer', 'min:1'],
+        ], [
+            'payer_name.required' => 'Nama kamu wajib diisi agar host dapat mengenali transfermu.',
+            'items.required' => 'Pilih minimal satu menu pesanan yang ingin kamu bayar.',
+        ]);
+
+        $payerName = trim($validated['payer_name']);
+        $paymentMethod = $validated['payment_method'] ?? 'qris';
+        $selectedItems = $validated['items'];
+        $roundUp = (bool) ($validated['round_up'] ?? false);
+
+        // Enforce unique payer name per bill (case-insensitive & trimmed)
+        $existingClaim = BillClaim::where('bill_id', $bill->id)
+            ->whereRaw('LOWER(TRIM(payer_name)) = ?', [mb_strtolower($payerName)])
+            ->first();
+
+        if ($existingClaim) {
+            return response()->json([
+                'success' => false,
+                'message' => "Nama \"{$payerName}\" sudah terdaftar dalam klaim tagihan ini. Gunakan nama lain atau tambahkan pembeda (contoh: {$payerName} 2).",
+            ], 422);
+        }
+
+        $itemsSubtotal = 0.0;
+        $validItemsToClaim = [];
+
+        foreach ($bill->items as $item) {
+            $requestedQty = (int) ($selectedItems[$item->id] ?? 0);
+            if ($requestedQty > 0) {
+                $claimableQty = min($requestedQty, $item->remaining_qty);
+                if ($claimableQty > 0) {
+                    $validItemsToClaim[$item->id] = $claimableQty;
+                    $itemsSubtotal += ($claimableQty * (float) $item->price);
+                }
+            }
+        }
+
+        if (empty($validItemsToClaim)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Menu yang kamu pilih sudah habis terbayar oleh kawan lain.',
+            ], 422);
+        }
+
+        $totalBillSubtotal = $bill->items_subtotal;
+        $deliveryFeeShare = 0.0;
+        $serviceFeeShare = 0.0;
+        $discountShare = 0.0;
+        $feeShare = 0.0;
+
+        if ($totalBillSubtotal > 0 && $itemsSubtotal > 0) {
+            $proportion = $itemsSubtotal / $totalBillSubtotal;
+            $deliveryFeeShare = (float) round($proportion * (float) $bill->delivery_fee);
+            $serviceFeeShare = (float) round($proportion * (float) $bill->service_fee);
+            $discountShare = (float) round($proportion * (float) $bill->discount);
+            $feeShare = ($deliveryFeeShare + $serviceFeeShare) - $discountShare;
+        }
+
+        $exactPaid = (float) max(0, round($itemsSubtotal + $feeShare));
+        $totalPaid = $exactPaid;
+
+        if ($request->filled('actual_amount')) {
+            $customActual = (float) $request->input('actual_amount');
+            if ($customActual < $exactPaid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nominal yang dibayarkan tidak boleh lebih kecil dari total tagihan (Rp '.number_format($exactPaid, 0, ',', '.').').',
+                ], 422);
+            }
+            $totalPaid = $customActual;
+        } elseif ($roundUp && $exactPaid > 0) {
+            $totalPaid = (float) (ceil($exactPaid / 1000) * 1000);
+        }
+
+        return DB::transaction(function () use ($bill, $payerName, $totalPaid, $paymentMethod, $validItemsToClaim) {
+            $claim = BillClaim::create([
+                'bill_id' => $bill->id,
+                'payer_name' => $payerName,
+                'amount' => $totalPaid,
+                'payment_method' => $paymentMethod,
+                'status' => 'pending',
+            ]);
+
+            foreach ($validItemsToClaim as $itemId => $qty) {
+                $claim->claimItems()->create([
+                    'bill_item_id' => $itemId,
+                    'qty' => $qty,
+                ]);
+            }
+
+            $bill->refresh();
+            $bill->load(['items.claimItems.claim']);
+            $itemsRemaining = [];
+            foreach ($bill->items as $item) {
+                $itemsRemaining[$item->id] = [
+                    'remaining' => $item->remaining_qty,
+                    'total' => $item->qty,
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Terima kasih {$payerName}! Klaim pembayaranmu telah dicatat dan menunggu konfirmasi dari Host.",
+                'amount' => $totalPaid,
+                'claim_id' => $claim->id,
+                'claim_data' => $claim->toDetailArray(),
+                'items_remaining' => $itemsRemaining,
+                'bill_summary' => $bill->getSummaryArray(),
+            ]);
+        });
+    }
+
+    /**
+     * Host confirms multiple payment claims simultaneously.
+     */
+    public function batchConfirmClaims(Request $request, string $slug): JsonResponse
+    {
+        $bill = Bill::where('slug', $slug)->where('user_id', Auth::id())->firstOrFail();
+
+        $validated = $request->validate([
+            'claim_ids' => 'required|array|min:1',
+            'claim_ids.*' => 'integer',
+        ]);
+
+        $claims = $bill->claims()
+            ->whereIn('id', $validated['claim_ids'])
+            ->where('status', 'pending')
+            ->get();
+
+        if ($claims->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada klaim berstatus menunggu yang dapat dikonfirmasi.',
+            ], 422);
+        }
+
+        $confirmedIds = [];
+        $totalAmount = 0.0;
+
+        DB::transaction(function () use ($claims, &$confirmedIds, &$totalAmount) {
+            foreach ($claims as $claim) {
+                $claim->update([
+                    'status' => 'confirmed',
+                    'confirmed_at' => now(),
+                ]);
+                $confirmedIds[] = $claim->id;
+                $totalAmount += (float) $claim->amount;
+            }
+        });
+
+        $bill->refresh();
+        $count = count($confirmedIds);
+        $formattedTotal = 'Rp '.number_format($totalAmount, 0, ',', '.');
+        $message = "Berhasil mengonfirmasi {$count} klaim pembayaran ({$formattedTotal})!";
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'confirmed_ids' => $confirmedIds,
+            'confirmed_count' => $count,
+            'total_amount' => $totalAmount,
+            'total_amount_formatted' => $formattedTotal,
+            'bill_summary' => $bill->getSummaryArray(),
+        ]);
+    }
+
+    /**
+     * Host confirms a payment claim (Anti-Fake Claim approval).
+     */
+    public function confirmClaim(Request $request, string $slug, int $claimId): RedirectResponse|JsonResponse
+    {
+        $bill = Bill::where('slug', $slug)->where('user_id', Auth::id())->firstOrFail();
+        $claim = $bill->claims()->where('id', $claimId)->firstOrFail();
+
+        $claim->update([
+            'status' => 'confirmed',
+            'confirmed_at' => now(),
+        ]);
+
+        $bill->refresh();
+        $message = "Pembayaran dari {$claim->payer_name} (Rp ".number_format($claim->amount, 0, ',', '.').') telah dikonfirmasi!';
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'claim_id' => $claim->id,
+                'status' => 'confirmed',
+                'bill_summary' => $bill->getSummaryArray(),
+            ]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * Host rejects a payment claim.
+     */
+    public function rejectClaim(Request $request, string $slug, int $claimId): RedirectResponse|JsonResponse
+    {
+        $bill = Bill::where('slug', $slug)->where('user_id', Auth::id())->firstOrFail();
+        $claim = $bill->claims()->where('id', $claimId)->firstOrFail();
+
+        $payerName = $claim->payer_name;
+        $claimIdDeleted = $claim->id;
+        $claim->delete();
+
+        $bill->refresh();
+        $bill->load(['items.claimItems.claim']);
+        $itemsRemaining = [];
+        foreach ($bill->items as $item) {
+            $itemsRemaining[$item->id] = [
+                'remaining' => $item->remaining_qty,
+                'total' => $item->qty,
+            ];
+        }
+
+        $message = "Klaim pembayaran dari {$payerName} telah dibatalkan / ditolak.";
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'claim_id' => $claimIdDeleted,
+                'items_remaining' => $itemsRemaining,
+                'bill_summary' => $bill->getSummaryArray(),
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 }
