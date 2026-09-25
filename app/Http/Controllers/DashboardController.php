@@ -21,11 +21,24 @@ class DashboardController extends Controller
         $qrisCount = $user->qris()->count();
         $bankCount = $user->banks()->count();
 
+        // Calculate total nominal transaction amount coming through PayMe from all bills created by user
+        $totalTransactionAmount = (float) $bills->sum('grand_total');
+
+        // Calculate total tip obtained from confirmed claims across all bills
+        $allConfirmedClaims = $bills->flatMap(function ($bill) {
+            return $bill->claims->where('status', 'confirmed');
+        });
+        $totalTips = (float) $allConfirmedClaims->sum(function ($claim) {
+            return (float) ($claim->tip_amount > 0 ? $claim->tip_amount : $claim->surplus);
+        });
+
         return view('dashboard', [
             'user' => $user,
             'bills' => $bills,
             'totalBills' => $totalBills,
             'settledBillsCount' => $settledBillsCount,
+            'totalTransactionAmount' => $totalTransactionAmount,
+            'totalTips' => $totalTips,
             'qrisCount' => $qrisCount,
             'bankCount' => $bankCount,
             'hasQris' => $qrisCount > 0,

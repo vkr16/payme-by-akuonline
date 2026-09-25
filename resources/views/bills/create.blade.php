@@ -68,33 +68,19 @@
              2. RINCIAN PESANAN & STRUK (Core Items)
              ========================================== -->
         <div class="card-solid rounded-2xl p-5 sm:p-6 bg-white border border-zinc-200/90 shadow-sm space-y-4">
-            <div class="flex items-center justify-between gap-2 flex-wrap">
-                <div class="flex items-center gap-2">
-                    <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60 flex items-center justify-center text-xs font-bold shadow-2xs">
-                        2
-                    </span>
-                    <h2 class="text-sm sm:text-base font-bold text-zinc-900">Daftar Menu & Biaya</h2>
-                </div>
-
-                <!-- Input Mode Segmented Control -->
-                <div class="inline-flex p-0.5 rounded-xl bg-zinc-100 border border-zinc-200 text-xs">
-                    <button type="button" id="tabAiMode" class="px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 bg-white text-emerald-900 shadow-2xs">
-                        <i class="fa-light fa-wand-magic-sparkles text-emerald-700 text-xs"></i>
-                        <span>Scan Struk (AI)</span>
-                    </button>
-                    <button type="button" id="tabManualMode" class="px-3 py-1.5 rounded-lg font-medium text-zinc-600 hover:text-zinc-900 transition-all flex items-center gap-1.5">
-                        <i class="fa-light fa-pen text-xs"></i>
-                        <span>Input Manual</span>
-                    </button>
-                </div>
+            <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60 flex items-center justify-center text-xs font-bold shadow-2xs">
+                    2
+                </span>
+                <h2 class="text-sm sm:text-base font-bold text-zinc-900">Daftar Menu & Biaya</h2>
             </div>
 
             <!-- AI OCR Dropzone Area -->
             <div id="aiSection" class="p-4 rounded-xl bg-emerald-50/40 border border-emerald-200/70 space-y-3">
                 <div class="flex items-center justify-between gap-2 flex-wrap">
                     <span class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                        <i class="fa-light fa-camera-viewfinder text-emerald-700"></i>
-                        <span>Pindai Gambar Struk / Nota</span>
+                        <i class="fa-light fa-wand-magic-sparkles text-emerald-700"></i>
+                        <span>Scan Struk (AI)</span>
                     </span>
 
                     <!-- Price format selector -->
@@ -102,7 +88,7 @@
                         <label for="receiptPriceType" class="text-zinc-500">Format:</label>
                         <select id="receiptPriceType" name="receipt_price_type" class="bg-white border border-zinc-300 rounded-lg px-2 py-1 text-xs text-zinc-800 focus:outline-none focus:border-emerald-700 font-medium">
                             <option value="unit_price" selected>Harga Satuan</option>
-                            <option value="total_price">Harga Total Baris</option>
+                            <option value="total_price">Harga Total</option>
                         </select>
                     </div>
                 </div>
@@ -400,10 +386,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const floatingGrandTotal = document.getElementById('floatingGrandTotal');
     const floatingItemCount = document.getElementById('floatingItemCount');
 
-    // Tab Mode Toggles
-    const tabAiMode = document.getElementById('tabAiMode');
-    const tabManualMode = document.getElementById('tabManualMode');
-    const aiSection = document.getElementById('aiSection');
 
     // QRIS Elements
     const qrisChoiceRadios = document.querySelectorAll('input[name="qris_choice"]');
@@ -545,18 +527,6 @@ document.addEventListener('DOMContentLoaded', function () {
         addItemRow('', 1, 0);
     });
 
-    // Tab switchers
-    tabAiMode.addEventListener('click', function () {
-        tabAiMode.className = 'px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 bg-white text-emerald-900 shadow-2xs';
-        tabManualMode.className = 'px-3 py-1.5 rounded-lg font-medium text-zinc-600 hover:text-zinc-900 transition-all flex items-center gap-1.5';
-        aiSection.classList.remove('hidden');
-    });
-
-    tabManualMode.addEventListener('click', function () {
-        tabManualMode.className = 'px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 bg-white text-emerald-900 shadow-2xs';
-        tabAiMode.className = 'px-3 py-1.5 rounded-lg font-medium text-zinc-600 hover:text-zinc-900 transition-all flex items-center gap-1.5';
-        aiSection.classList.add('hidden');
-    });
 
     // QRIS Choice Radio toggle
     qrisChoiceRadios.forEach(radio => {

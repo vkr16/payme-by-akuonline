@@ -114,9 +114,9 @@ class ReceiptParserService
         $base64Image = 'data:'.$mimeType.';base64,'.base64_encode($imageBytes);
 
         if ($priceType === 'total_price') {
-            $priceInstruction = 'PETUNJUK USER (PENTING): Pengguna mengonfirmasi bahwa nominal yang tertera pada kolom harga di struk adalah TOTAL HARGA BARIS / TOTAL KUANTITAS (Subtotal untuk `qty` barang tersebut). Kamu HARUS MEMBAGI nominal tersebut dengan `qty` (yaitu price_satuan = nominal / qty) agar field `price` pada JSON berisi HARGA SATUAN per 1 pcs.';
+            $priceInstruction = 'Pengguna memilih format "Harga total". Harga total berarti harga yang tampil di baris item di struk merupakan harga total dari jumlah item tersebut, jadi untuk menafsirkan harga satuannya harus dibagi dengan quantity/jumlahnya dulu (price = nominal di baris struk / qty). Pastikan field `price` pada JSON merupakan harga satuan hasil pembagian tersebut.';
         } else {
-            $priceInstruction = 'PETUNJUK USER (PENTING - DEFAULT): Pengguna mengonfirmasi bahwa nominal yang tertera pada kolom harga di struk adalah HARGA SATUAN (Unit Price per 1 pcs). Ambil angka tersebut langsung tanpa membaginya dengan `qty` sebagai field `price`.';
+            $priceInstruction = 'Pengguna memilih format "Harga satuan". Harga satuan berarti harga yang tampil di baris item di struk adalah harga 1 item produk terkait. Ambil langsung nominal tersebut tanpa membaginya dengan quantity/jumlahnya sebagai field `price`.';
         }
 
         $prompt = <<<PROMPT
@@ -138,7 +138,12 @@ Tugas Anda adalah membaca gambar struk ini dan mengembalikan JSON HANYA dengan s
   "total": 33000
 }
 
-ATURAN DEDUKSI HARGA:
+ATURAN FORMAT STRUK:
+Di bagian format struk terdapat 2 opsi:
+- Harga satuan: Harga yang tampil di baris item di struk adalah harga 1 item produk terkait.
+- Harga total: Harga yang tampil di baris item di struk merupakan harga total dari jumlah item tersebut, jadi untuk menafsirkan harga satuannya harus dibagi dengan quantity/jumlahnya dulu.
+
+KONDISI PILIHAN FORMAT PENGGUNA SAAT INI:
 {$priceInstruction}
 
 Aturan Tambahan:
@@ -296,22 +301,48 @@ PROMPT;
         }
 
         if ($priceType === 'total_price') {
-            $corrected = [];
-            $wasAdjusted = false;
-            foreach ($items as $item) {
-                if ($item['qty'] > 1) {
-                    $unitPrice = round($item['price'] / $item['qty']);
-                    $corrected[] = array_merge($item, ['price' => $unitPrice]);
-                    $wasAdjusted = true;
-                } else {
-                    $corrected[] = $item;
+            $expectedSubtotal = $total > 0 ? max(0, $total - $deliveryFee - $serviceFee + $discount) : 0;
+
+            if ($expectedSubtotal > 0) {
+                $sumAsUnitPrice = 0.0;
+                $sumAsLineTotal = 0.0;
+                $hasMultiQty = false;
+
+                foreach ($items as $item) {
+                    $qty = max(1, $item['qty']);
+                    if ($qty > 1) {
+                        $hasMultiQty = true;
+                    }
+                    $sumAsUnitPrice += $item['price'] * $qty;
+                    $sumAsLineTotal += $item['price'];
+                }
+
+                // If sum of (price * qty) aligns better with expected subtotal than sum of (price),
+                // the AI model has already divided the line total into unit price as requested in the prompt.
+                // Only divide in PHP if the AI model did not divide (sumAsLineTotal matches expected subtotal).
+                if ($hasMultiQty && abs($sumAsLineTotal - $expectedSubtotal) < abs($sumAsUnitPrice - $expectedSubtotal)) {
+                    $corrected = [];
+                    foreach ($items as $item) {
+                        if ($item['qty'] > 1) {
+                            $unitPrice = round($item['price'] / $item['qty']);
+                            $corrected[] = array_merge($item, ['price' => $unitPrice]);
+                        } else {
+                            $corrected[] = $item;
+                        }
+                    }
+
+                    return [
+                        'items' => $corrected,
+                        'auto_corrected' => true,
+                        'auto_corrected_message' => 'Format diterapkan (Harga Struk = Harga Total): Nominal baris item dibagi dengan quantity untuk menghasilkan harga satuan.',
+                    ];
                 }
             }
 
             return [
-                'items' => $corrected,
-                'auto_corrected' => $wasAdjusted,
-                'auto_corrected_message' => 'Format diterapkan (Harga Struk = Harga Total Item): Nominal baris item secara otomatis dibagi dengan jumlah kuantitas untuk menghasilkan harga satuan.',
+                'items' => $items,
+                'auto_corrected' => false,
+                'auto_corrected_message' => '',
             ];
         }
 

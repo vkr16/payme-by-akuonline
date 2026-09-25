@@ -37,45 +37,59 @@
     <!-- Quick Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <!-- Card 1: Total Tagihan Dibuat -->
-        <div class="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs">
-            <div class="flex items-center justify-between text-zinc-400 mb-2">
-                <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total Tagihan</span>
-                <i class="fa-light fa-receipt text-lg text-emerald-800"></i>
+        <div class="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between text-zinc-400 mb-2">
+                    <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total Tagihan</span>
+                    <i class="fa-light fa-receipt text-lg text-emerald-800"></i>
+                </div>
+                <div class="text-2xl font-black text-zinc-900 tabular-nums">{{ $totalBills }}</div>
             </div>
-            <div class="text-2xl font-black text-zinc-900 tabular-nums">{{ $totalBills }}</div>
-            <span class="text-[11px] text-zinc-400 mt-1 block">{{ $totalBills > 0 ? $totalBills . ' tagihan tersimpan' : 'Belum ada bill yang dibuat' }}</span>
+            <span class="text-[11px] text-zinc-400 mt-2 block">{{ $totalBills > 0 ? $totalBills . ' tagihan tersimpan' : 'Belum ada bill yang dibuat' }}</span>
         </div>
 
-        <!-- Card 2: Status QRIS -->
-        <a href="{{ route('payment_methods.index') }}" class="group p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs hover:border-emerald-600/70 transition-all block">
-            <div class="flex items-center justify-between text-zinc-400 mb-2">
-                <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">QRIS Terhubung</span>
-                <i class="fa-light fa-qrcode text-lg text-emerald-800 group-hover:scale-110 transition-transform"></i>
+        <!-- Card 2: Total Transaksi (+ Subtitle Total Tip Diperoleh) -->
+        <div class="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between text-zinc-400 mb-2">
+                    <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total Tagihan Dibuat</span>
+                    <i class="fa-light fa-hand-holding-dollar text-lg text-emerald-800"></i>
+                </div>
+                <div class="text-2xl font-black text-zinc-900 tabular-nums">
+                    Rp {{ number_format($totalTransactionAmount, 0, ',', '.') }}
+                </div>
             </div>
-            <div class="flex items-baseline justify-between">
-                <div class="text-2xl font-black text-zinc-900 tabular-nums">{{ $qrisCount }}</div>
-                <span class="text-xs font-bold text-emerald-700 group-hover:underline flex items-center gap-1">
-                    <span>Kelola</span>
-                    <i class="fa-light fa-arrow-right text-[10px]"></i>
+            <div class="text-[11px] mt-2 flex items-center gap-1.5 flex-wrap">
+                <span class="text-zinc-500">Tip diperoleh:</span>
+                <span class="font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60 tabular-nums inline-flex items-center gap-1">
+                    <i class="fa-light fa-gift text-[10px]"></i>
+                    Rp {{ number_format($totalTips, 0, ',', '.') }}
                 </span>
             </div>
-            <span class="text-[11px] text-zinc-400 mt-1 block">{{ $qrisCount > 0 ? $qrisCount . ' QRIS statis terdaftar' : 'Belum ada QRIS tersimpan' }}</span>
-        </a>
+        </div>
 
-        <!-- Card 3: Rekening Bank -->
-        <a href="{{ route('payment_methods.index') }}" class="group p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs hover:border-emerald-600/70 transition-all block">
-            <div class="flex items-center justify-between text-zinc-400 mb-2">
-                <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Metode Bank / E-Wallet</span>
-                <i class="fa-light fa-building-columns text-lg text-emerald-800 group-hover:scale-110 transition-transform"></i>
+        <!-- Card 3: QRIS & Rekening Terhubung -->
+        <a href="{{ route('payment_methods.index') }}" class="group p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs hover:border-emerald-600/70 transition-all block flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between text-zinc-400 mb-2">
+                    <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">QRIS & Rekening Terhubung</span>
+                    <div class="flex items-center gap-1.5 text-emerald-800">
+                        <i class="fa-light fa-qrcode text-base group-hover:scale-110 transition-transform"></i>
+                        <span class="text-zinc-300 text-xs">/</span>
+                        <i class="fa-light fa-building-columns text-base group-hover:scale-110 transition-transform"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline justify-between">
+                    <div class="text-2xl font-black text-zinc-900 tabular-nums">{{ $qrisCount + $bankCount }}</div>
+                    <span class="text-xs font-bold text-emerald-700 group-hover:underline flex items-center gap-1">
+                        <span>Kelola</span>
+                        <i class="fa-light fa-arrow-right text-[10px]"></i>
+                    </span>
+                </div>
             </div>
-            <div class="flex items-baseline justify-between">
-                <div class="text-2xl font-black text-zinc-900 tabular-nums">{{ $bankCount }}</div>
-                <span class="text-xs font-bold text-emerald-700 group-hover:underline flex items-center gap-1">
-                    <span>Kelola</span>
-                    <i class="fa-light fa-arrow-right text-[10px]"></i>
-                </span>
-            </div>
-            <span class="text-[11px] text-zinc-400 mt-1 block">{{ $bankCount > 0 ? $bankCount . ' rekening & e-wallet tersimpan' : 'Belum ada rekening tersimpan' }}</span>
+            <span class="text-[11px] text-zinc-400 mt-2 block">
+                {{ $qrisCount }} QRIS &bull; {{ $bankCount }} Rekening / E-Wallet
+            </span>
         </a>
     </div>
 

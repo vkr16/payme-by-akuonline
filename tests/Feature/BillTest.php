@@ -31,6 +31,9 @@ class BillTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Informasi Patungan');
         $response->assertSee('Scan Struk (AI)');
+        $response->assertSee('Harga Satuan');
+        $response->assertSee('Harga Total');
+        $response->assertDontSee('id="tabManualMode"', false);
     }
 
     public function test_user_can_create_bill_with_manual_items_and_redirect_to_show(): void
@@ -182,6 +185,10 @@ class BillTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Acara Ultah Kantor');
         $response->assertSee('Salin Tautan');
+        $response->assertSee('Bayar Sekarang');
+        $response->assertSee('QRIS Dinamis');
+        $response->assertSee('Unduh Card QR');
+        $response->assertDontSee('Salin String QR');
     }
 
     public function test_participant_can_calculate_selection_with_proportional_fees(): void

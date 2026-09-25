@@ -129,15 +129,34 @@
     <!-- ==========================================
          PARTICIPANT ITEM SELECTION (Mekanisme Bayar)
          ========================================== -->
-    <div class="card-solid rounded-2xl p-6 sm:p-8 bg-white border border-zinc-200/90 shadow-sm space-y-5">
-        <div>
-            <h2 class="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-2">
-                <i class="fa-light fa-utensils text-emerald-700"></i>
-                <span>Pilih Menu Pesanan Kamu</span>
-            </h2>
-            <p class="text-xs text-zinc-500 mt-0.5">
-                Tentukan porsi atau makanan yang kamu pesan. Biaya tambahan & diskon dihitung secara proporsional.
-            </p>
+    <div class="card-solid rounded-2xl p-6 sm:p-8 bg-white border border-zinc-200/90 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h2 class="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-2">
+                    <i class="fa-light fa-utensils text-emerald-700"></i>
+                    <span>Pilih Menu Pesanan Kamu</span>
+                </h2>
+                <p class="text-xs text-zinc-500 mt-0.5">
+                    Tentukan porsi atau makanan yang kamu pesan. Biaya tambahan & diskon dihitung secara proporsional.
+                </p>
+            </div>
+
+            <!-- Search Menu Input (Sticky/Filter via JS) -->
+            @if($bill->items->count() > 3)
+            <div class="relative w-full sm:w-64 flex-shrink-0">
+                <i class="fa-light fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xs"></i>
+                <input type="text"
+                       id="menuSearchInput"
+                       placeholder="Cari nama menu..."
+                       class="w-full pl-8 pr-8 py-2 rounded-xl bg-zinc-50 border border-zinc-200 focus:bg-white focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 text-xs text-zinc-800 placeholder-zinc-400 transition-all outline-none"
+                       autocomplete="off">
+                <button type="button"
+                        id="btnClearMenuSearch"
+                        class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 w-5 h-5 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors">
+                    <i class="fa-light fa-xmark text-xs"></i>
+                </button>
+            </div>
+            @endif
         </div>
 
         <!-- Menu Items List with Stepper & Wrap Resilience -->
@@ -148,6 +167,7 @@
                 @endphp
                 <div class="item-selection-card p-3 sm:p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 {{ $isSoldOut ? 'bg-zinc-50/60 border-zinc-200/60 opacity-60' : 'bg-white border-zinc-200/80 hover:border-emerald-600/70 shadow-2xs' }} cursor-pointer"
                      data-item-id="{{ $item->id }}"
+                     data-name="{{ strtolower($item->name) }}"
                      data-price="{{ $item->price }}"
                      data-remaining="{{ $item->remaining_qty }}"
                      data-total="{{ $item->qty }}">
@@ -194,6 +214,13 @@
             @endforeach
         </div>
 
+        <!-- Empty search results state -->
+        <div id="menuSearchEmptyState" class="hidden p-6 rounded-2xl bg-zinc-50 border border-dashed border-zinc-200 text-center text-xs text-zinc-500 space-y-1">
+            <i class="fa-light fa-magnifying-glass text-zinc-400 text-xl block mb-1"></i>
+            <p class="font-medium text-zinc-700">Menu tidak ditemukan</p>
+            <p class="text-zinc-400">Tidak ada item yang cocok dengan kata kunci pencarian Anda.</p>
+        </div>
+
         <!-- Proportional Calculation Summary for Current Participant -->
         <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-2 text-xs">
             <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Kalkulasi Bagianmu</span>
@@ -235,12 +262,12 @@
             </div>
         </div>
 
-        <!-- Payment Actions: Dynamic QRIS & Claim Button -->
+        <!-- Payment Actions: Unified Payment Modal & Claim Button -->
         <div class="pt-2 space-y-3">
-            @if($bill->qris_payload)
-                <button type="button" id="btnShowDynamicQris" class="touch-target w-full py-3 px-4 rounded-xl btn-primary font-bold text-xs sm:text-sm shadow-md inline-flex items-center justify-center gap-2 transition-all cursor-pointer">
-                    <i class="fa-light fa-qrcode text-base"></i>
-                    <span>Bayar Sekarang Pakai QRIS Dinamis</span>
+            @if($bill->qris_payload || $bill->banks->count() > 0)
+                <button type="button" id="btnShowPaymentModal" class="touch-target w-full py-3 px-4 rounded-xl btn-primary font-bold text-xs sm:text-sm shadow-md inline-flex items-center justify-center gap-2 transition-all cursor-pointer">
+                    <i class="fa-light fa-wallet text-base"></i>
+                    <span>Bayar Sekarang</span>
                 </button>
             @endif
 
@@ -423,33 +450,117 @@
 </div>
 
 <!-- ==========================================
-     MODAL: DYNAMIC QRIS DIALOG
+     MODAL: PEMBAYARAN (QRIS Dinamis Card & Bank / E-Wallet)
      ========================================== -->
-<div id="qrisModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 shadow-xl border border-zinc-200 animate-in fade-in zoom-in duration-200">
-        <div class="flex justify-between items-center pb-2 border-b border-zinc-100">
-            <span class="text-xs font-bold text-zinc-800">QRIS Dinamis Otomatis</span>
-            <button type="button" id="btnCloseQrisModal" class="text-zinc-400 hover:text-zinc-700 text-sm">
-                <i class="fa-light fa-xmark"></i>
+<div id="paymentModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-5 sm:p-7 max-w-md w-full text-center space-y-4 shadow-xl border border-zinc-200 animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto no-scrollbar">
+        <!-- Header -->
+        <div class="flex justify-between items-center pb-2.5 border-b border-zinc-100">
+            <div class="text-left">
+                <span class="text-sm font-bold text-zinc-900 block">Pilihan Pembayaran</span>
+                <span class="text-[11px] text-zinc-400">Scan QRIS Dinamis atau transfer rekening bank / e-wallet</span>
+            </div>
+            <button type="button" id="btnClosePaymentModal" class="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer">
+                <i class="fa-light fa-xmark text-sm"></i>
             </button>
         </div>
 
-        <div class="p-3 rounded-2xl bg-zinc-50 border border-zinc-200 inline-block mx-auto">
-            <div id="dynamicQrCanvasContainer" class="w-56 h-56 mx-auto flex items-center justify-center"></div>
+        <div class="space-y-4">
+            <!-- SECTION 1: QRIS Dinamis -->
+            @if($bill->qris_payload)
+            <div class="space-y-3">
+                <!-- QRIS Card Container (Styled as official QRIS invoice voucher) -->
+                <div id="qrisCardDownloadArea" class="p-4 sm:p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-xs space-y-3 text-center relative overflow-hidden">
+                    <!-- Card Header -->
+                    <div class="flex items-center justify-between border-b border-zinc-100 pb-2.5">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-5 h-5 rounded-md bg-emerald-800 text-white flex items-center justify-center text-[10px] font-bold">
+                                <i class="fa-light fa-qrcode"></i>
+                            </div>
+                            <span class="font-extrabold text-xs text-zinc-900 tracking-tight">QRIS DINAMIS</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                            Nominal Pas
+                        </span>
+                    </div>
+
+                    <!-- Merchant / Destination Info -->
+                    <div class="space-y-0.5">
+                        <div class="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Tujuan Pembayaran</div>
+                        <div class="text-sm font-black text-zinc-900 leading-tight">
+                            {{ $bill->qris_merchant_name ?: $bill->user->name }}
+                        </div>
+                        <div class="text-[11px] text-zinc-500">
+                            {{ $bill->qris_merchant_city ?: 'Indonesia' }} &bull; Host: {{ $bill->user->name }}
+                        </div>
+                    </div>
+
+                    <!-- QR Code Box -->
+                    <div class="p-3 rounded-2xl bg-zinc-50 border border-zinc-200 inline-block mx-auto">
+                        <div id="dynamicQrCanvasContainer" class="w-52 h-52 mx-auto flex items-center justify-center"></div>
+                    </div>
+
+                    <!-- Amount / Nominal Locked -->
+                    <div class="pt-1 border-t border-zinc-100 space-y-0.5">
+                        <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Total Tagihan Kamu</span>
+                        <div class="text-2xl font-black text-emerald-900 tabular-nums" id="modalQrisNominal">Rp 0</div>
+                        <p class="text-[10px] text-zinc-400">
+                            Scan via BCA, Mandiri, BRI, GoPay, OVO, ShopeePay, DANA dll.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Download Card Action -->
+                <div>
+                    <button type="button" id="btnDownloadQrisCard" class="touch-target w-full py-2.5 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                        <i class="fa-light fa-download text-xs text-emerald-800" id="downloadQrisCardIcon"></i>
+                        <span id="downloadQrisCardText">Unduh Card QR</span>
+                    </button>
+                </div>
+            </div>
+            @endif
+
+            <!-- SECTION 2: Transfer Bank & E-Wallet Content -->
+            @if($bill->banks->count() > 0)
+            <div class="space-y-2.5 text-left {{ $bill->qris_payload ? 'pt-2 border-t border-zinc-100' : '' }}">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-light fa-building-columns text-emerald-700 text-xs"></i>
+                        <span class="text-xs font-bold text-zinc-900">Transfer Bank / E-Wallet</span>
+                    </div>
+                    <span class="text-[11px] font-bold text-emerald-800 tabular-nums" id="modalBankNominal">Rp 0</span>
+                </div>
+
+                <div class="space-y-2 max-h-52 overflow-y-auto no-scrollbar pr-0.5">
+                    @foreach($bill->banks as $bank)
+                    <div class="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between gap-2.5">
+                        <div class="text-xs leading-tight min-w-0 flex-1">
+                            <div class="font-bold text-zinc-900 flex items-center gap-1.5">
+                                <span class="truncate">{{ $bank->bank_name }}</span>
+                            </div>
+                            <div class="text-zinc-800 tabular-nums font-mono font-bold mt-1 tracking-wide text-xs sm:text-sm">
+                                {{ $bank->account_number }}
+                            </div>
+                            <div class="text-[10px] text-zinc-500 mt-0.5 truncate">
+                                a.n {{ $bank->account_holder }}
+                            </div>
+                        </div>
+                        <button type="button" class="btn-copy-acc-modal flex-shrink-0 touch-target px-2.5 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-emerald-600 text-zinc-700 hover:text-emerald-800 text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center gap-1" data-acc="{{ $bank->account_number }}" data-bank="{{ $bank->bank_name }}">
+                            <i class="fa-light fa-copy text-xs"></i>
+                            <span>Salin</span>
+                        </button>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
         </div>
 
-        <div>
-            <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Nominal Terkunci Otomatis</span>
-            <div class="text-2xl font-black text-emerald-900 tabular-nums" id="modalQrisNominal">Rp 0</div>
-            <p class="text-[11px] text-zinc-500 mt-1">
-                Scan menggunakan BCA, Mandiri, GoPay, Dana, OVO, atau aplikasi mobile banking apa saja.
-            </p>
-        </div>
-
-        <div class="pt-2 space-y-2">
-            <button type="button" id="btnModalConfirmPaid" class="touch-target w-full py-2.5 px-4 rounded-xl btn-primary font-bold text-xs sm:text-sm shadow-xs inline-flex items-center justify-center gap-2">
-                <i class="fa-light fa-check text-xs"></i>
-                <span>Saya Sudah Selesai Scan & Bayar</span>
+        <!-- Footer Action: Direct To Claim Modal -->
+        <div class="pt-2 border-t border-zinc-100 space-y-2">
+            <button type="button" id="btnModalConfirmPaid" class="touch-target w-full py-2.5 px-4 rounded-xl btn-primary font-bold text-xs sm:text-sm shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer transition-all">
+                <i class="fa-light fa-circle-check text-xs"></i>
+                <span>Saya Sudah Selesai Bayar / Transfer</span>
             </button>
         </div>
     </div>
@@ -725,7 +836,7 @@
                 <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Kawan yang Membayar:</span>
                 <span class="text-[11px] text-zinc-500 font-medium" id="itemModalTotalClaimedSummary">Total: 0 porsi</span>
             </div>
-            
+
             <div id="itemContributorsList" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
                 <!-- Dynamically populated via JS -->
             </div>
@@ -835,14 +946,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const partRoundUpBadge = document.getElementById('partRoundUpBadge');
     const partGrandTotal = document.getElementById('partGrandTotal');
 
-    const btnShowDynamicQris = document.getElementById('btnShowDynamicQris');
+    const btnShowPaymentModal = document.getElementById('btnShowPaymentModal');
     const btnOpenClaimModal = document.getElementById('btnOpenClaimModal');
 
-    // QRIS Modal
-    const qrisModal = document.getElementById('qrisModal');
-    const btnCloseQrisModal = document.getElementById('btnCloseQrisModal');
+    // Payment Modal (Unified QRIS & Bank)
+    const paymentModal = document.getElementById('paymentModal');
+    const btnClosePaymentModal = document.getElementById('btnClosePaymentModal');
     const dynamicQrCanvasContainer = document.getElementById('dynamicQrCanvasContainer');
     const modalQrisNominal = document.getElementById('modalQrisNominal');
+    const modalBankNominal = document.getElementById('modalBankNominal');
+    const btnDownloadQrisCard = document.getElementById('btnDownloadQrisCard');
     const btnModalConfirmPaid = document.getElementById('btnModalConfirmPaid');
 
     // Claim Modal
@@ -1073,12 +1186,62 @@ document.addEventListener('DOMContentLoaded', function () {
         updateCalculation();
     }
 
+    // Menu Search Filter (Client-side JS)
+    const menuSearchInput = document.getElementById('menuSearchInput');
+    const btnClearMenuSearch = document.getElementById('btnClearMenuSearch');
+    const menuSearchEmptyState = document.getElementById('menuSearchEmptyState');
+
+    if (menuSearchInput) {
+        function filterMenuItems() {
+            const query = (menuSearchInput.value || '').trim().toLowerCase();
+            const cards = participantItemsContainer.querySelectorAll('.item-selection-card');
+            let matchCount = 0;
+
+            cards.forEach(card => {
+                const name = (card.getAttribute('data-name') || '').toLowerCase();
+                const matches = query === '' || name.includes(query);
+                if (matches) {
+                    card.classList.remove('hidden');
+                    matchCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            if (btnClearMenuSearch) {
+                if (query.length > 0) {
+                    btnClearMenuSearch.classList.remove('hidden');
+                } else {
+                    btnClearMenuSearch.classList.add('hidden');
+                }
+            }
+
+            if (menuSearchEmptyState) {
+                if (matchCount === 0 && query !== '') {
+                    menuSearchEmptyState.classList.remove('hidden');
+                } else {
+                    menuSearchEmptyState.classList.add('hidden');
+                }
+            }
+        }
+
+        menuSearchInput.addEventListener('input', filterMenuItems);
+
+        if (btnClearMenuSearch) {
+            btnClearMenuSearch.addEventListener('click', function () {
+                menuSearchInput.value = '';
+                filterMenuItems();
+                menuSearchInput.focus();
+            });
+        }
+    }
+
     resetSelection();
     window.addEventListener('pageshow', resetSelection);
 
-    // Show Dynamic QRIS Modal
-    if (btnShowDynamicQris) {
-        btnShowDynamicQris.addEventListener('click', function () {
+    // Show Unified Payment Modal (QRIS & Bank)
+    if (btnShowPaymentModal) {
+        btnShowPaymentModal.addEventListener('click', function () {
             const selected = getSelectedItems();
             if (Object.keys(selected).length === 0) {
                 if (window.Notiflix) {
@@ -1089,37 +1252,183 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            modalQrisNominal.textContent = formatRupiah(currentCalculatedTotal);
-            dynamicQrCanvasContainer.innerHTML = '';
-
-            if (currentDynamicPayload) {
-                new QRCode(dynamicQrCanvasContainer, {
-                    text: currentDynamicPayload,
-                    width: 210,
-                    height: 210,
-                    colorDark: "#064E3B",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-            } else {
-                dynamicQrCanvasContainer.innerHTML = '<p class="text-xs text-zinc-500">QRIS tidak tersedia.</p>';
+            const formattedTotal = formatRupiah(currentCalculatedTotal);
+            if (modalQrisNominal) {
+                modalQrisNominal.textContent = formattedTotal;
+            }
+            if (modalBankNominal) {
+                modalBankNominal.textContent = formattedTotal;
             }
 
-            qrisModal.classList.remove('hidden');
+            if (dynamicQrCanvasContainer) {
+                dynamicQrCanvasContainer.innerHTML = '';
+                if (currentDynamicPayload) {
+                    new QRCode(dynamicQrCanvasContainer, {
+                        text: currentDynamicPayload,
+                        width: 200,
+                        height: 200,
+                        colorDark: "#064E3B",
+                        colorLight: "#FFFFFF",
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                } else {
+                    dynamicQrCanvasContainer.innerHTML = '<p class="text-xs text-zinc-500 py-6">QRIS tidak tersedia untuk tagihan ini.</p>';
+                }
+            }
+
+            if (paymentModal) {
+                paymentModal.classList.remove('hidden');
+            }
         });
     }
 
-    if (btnCloseQrisModal) {
-        btnCloseQrisModal.addEventListener('click', () => qrisModal.classList.add('hidden'));
+    if (btnClosePaymentModal && paymentModal) {
+        btnClosePaymentModal.addEventListener('click', () => paymentModal.classList.add('hidden'));
     }
 
-    // Switch from QRIS modal to Claim modal
+
+
+    // Switch from Payment modal to Claim modal
     if (btnModalConfirmPaid) {
         btnModalConfirmPaid.addEventListener('click', function () {
-            qrisModal.classList.add('hidden');
+            if (paymentModal) {
+                paymentModal.classList.add('hidden');
+            }
             openClaimModal();
         });
     }
+
+    // Download QRIS Card as Image
+    if (btnDownloadQrisCard) {
+        btnDownloadQrisCard.addEventListener('click', function () {
+            if (!dynamicQrCanvasContainer) return;
+            const qrCanvas = dynamicQrCanvasContainer.querySelector('canvas');
+            const qrImg = dynamicQrCanvasContainer.querySelector('img');
+
+            if (!qrCanvas && (!qrImg || !qrImg.src)) {
+                if (window.Notiflix) Notiflix.Notify.failure('QR Code belum selesai dimuat.');
+                return;
+            }
+
+            const downloadCard = function (qrSource) {
+                const cardCanvas = document.createElement('canvas');
+                const ctx = cardCanvas.getContext('2d');
+                const scale = 3; // High resolution
+                const cardWidth = 380 * scale;
+                const cardHeight = 520 * scale;
+
+                cardCanvas.width = cardWidth;
+                cardCanvas.height = cardHeight;
+
+                // Background
+                ctx.fillStyle = '#F4F4F5';
+                ctx.fillRect(0, 0, cardWidth, cardHeight);
+
+                // Top decorative banner
+                ctx.fillStyle = '#064E3B'; // Emerald 900
+                ctx.fillRect(0, 0, cardWidth, 68 * scale);
+
+                // Top Header Text
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${14 * scale}px "Plus Jakarta Sans", sans-serif`;
+                ctx.textAlign = 'left';
+                ctx.fillText('PayMe • QRIS DINAMIS', 24 * scale, 32 * scale);
+
+                ctx.font = `${10 * scale}px "Plus Jakarta Sans", sans-serif`;
+                ctx.fillStyle = '#A7F3D0';
+                ctx.fillText('Scan & Bayar Otomatis Nominal Pas', 24 * scale, 50 * scale);
+
+                // Destination Info
+                const merchantName = "{{ addslashes($bill->qris_merchant_name ?: $bill->user->name) }}";
+                const merchantCity = "{{ addslashes($bill->qris_merchant_city ?: 'Indonesia') }}";
+                const billTitle = "{{ addslashes($bill->title) }}";
+
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#71717A';
+                ctx.font = `600 ${9 * scale}px "Plus Jakarta Sans", sans-serif`;
+                ctx.fillText('TUJUAN PEMBAYARAN', cardWidth / 2, 95 * scale);
+
+                ctx.fillStyle = '#18181B';
+                ctx.font = `bold ${15 * scale}px "Plus Jakarta Sans", sans-serif`;
+                ctx.fillText(merchantName, cardWidth / 2, 115 * scale);
+
+                ctx.fillStyle = '#71717A';
+                ctx.font = `${10 * scale}px "Plus Jakarta Sans", sans-serif`;
+                ctx.fillText(`${merchantCity} • Host: {{ addslashes($bill->user->name) }}`, cardWidth / 2, 132 * scale);
+
+                // QR Box Background
+                const qrBoxSize = 220 * scale;
+                const qrBoxX = (cardWidth - qrBoxSize) / 2;
+                const qrBoxY = 150 * scale;
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * scale);
+                ctx.fill();
+
+                // Draw QR Code onto Card
+                const qrSize = 190 * scale;
+                const qrX = (cardWidth - qrSize) / 2;
+                const qrY = qrBoxY + (qrBoxSize - qrSize) / 2;
+                ctx.drawImage(qrSource, qrX, qrY, qrSize, qrSize);
+
+                // Amount Section
+                const amountY = 398 * scale;
+                ctx.fillStyle = '#71717A';
+                ctx.font = `600 ${9 * scale}px "Plus Jakarta Sans", sans-serif`;
+                ctx.fillText('TOTAL TAGIHAN KAMU', cardWidth / 2, amountY);
+
+                ctx.fillStyle = '#064E3B';
+                ctx.font = `900 ${22 * scale}px "Plus Jakarta Sans", sans-serif`;
+                ctx.fillText(formatRupiah(currentCalculatedTotal), cardWidth / 2, amountY + (25 * scale));
+
+                // Footer Note
+                ctx.fillStyle = '#A1A1AA';
+                ctx.font = `${9 * scale}px "Plus Jakarta Sans", sans-serif`;
+                ctx.fillText(`Tagihan: ${billTitle}`, cardWidth / 2, amountY + (48 * scale));
+                ctx.fillText('BCA, Mandiri, BRI, GoPay, OVO, ShopeePay, DANA dll.', cardWidth / 2, amountY + (63 * scale));
+
+                // Border around card
+                ctx.strokeStyle = '#E4E4E7';
+                ctx.lineWidth = 1 * scale;
+                ctx.strokeRect(0, 0, cardWidth, cardHeight);
+
+                // Trigger Download
+                const link = document.createElement('a');
+                link.download = `QRIS-PayMe-${slug}.png`;
+                link.href = cardCanvas.toDataURL('image/png');
+                link.click();
+
+                if (window.Notiflix) Notiflix.Notify.success('Card QRIS berhasil diunduh!');
+            };
+
+            if (qrCanvas) {
+                downloadCard(qrCanvas);
+            } else if (qrImg) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => downloadCard(img);
+                img.src = qrImg.src;
+            }
+        });
+    }
+
+    // Modal Copy Bank Account Buttons
+    const modalCopyAccBtns = document.querySelectorAll('.btn-copy-acc-modal');
+    modalCopyAccBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            const acc = this.getAttribute('data-acc');
+            const bank = this.getAttribute('data-bank');
+            navigator.clipboard.writeText(acc).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-light fa-check text-emerald-600"></i><span>Disalin</span>';
+                if (window.Notiflix) Notiflix.Notify.success(`Nomor rekening ${bank} (${acc}) berhasil disalin!`);
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                }, 2000);
+            });
+        });
+    });
 
     function parseRupiahInput(str) {
         if (!str) return 0;
