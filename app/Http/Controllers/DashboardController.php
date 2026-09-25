@@ -15,7 +15,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        $bills = $user->bills()->with(['items', 'banks', 'claims'])->latest()->get();
+        $bills = $user->bills()->with(['items.claimItems.claim', 'banks', 'claims.claimItems'])->latest()->get();
         $totalBills = $bills->count();
         $settledBillsCount = $bills->filter(fn ($b) => $b->isFullySettled())->count();
         $qrisCount = $user->qris()->count();

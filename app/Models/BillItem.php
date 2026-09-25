@@ -55,6 +55,18 @@ class BillItem extends Model
     }
 
     /**
+     * Get confirmed claimed quantity (only counting confirmed claims).
+     */
+    public function getConfirmedClaimedQtyAttribute(): int
+    {
+        return (int) $this->claimItems()
+            ->whereHas('claim', function ($query) {
+                $query->where('status', 'confirmed');
+            })
+            ->sum('qty');
+    }
+
+    /**
      * Get remaining available quantity.
      */
     public function getRemainingQtyAttribute(): int

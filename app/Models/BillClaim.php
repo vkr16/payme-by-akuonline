@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'bill_id',
     'payer_name',
     'amount',
+    'bill_amount',
+    'tip_amount',
     'payment_method',
     'status',
     'confirmed_at',
@@ -19,6 +21,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class BillClaim extends Model
 {
     use HasFactory;
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (BillClaim $claim) {
+            if ($claim->bill_amount === null || (float) $claim->bill_amount <= 0) {
+                $total = (float) $claim->amount;
+                $claim->bill_amount = $total;
+                $claim->tip_amount = 0;
+            }
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -29,6 +45,8 @@ class BillClaim extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'bill_amount' => 'decimal:2',
+            'tip_amount' => 'decimal:2',
             'confirmed_at' => 'datetime',
         ];
     }
@@ -83,6 +101,10 @@ class BillClaim extends Model
      */
     public function getSurplusAttribute(): float
     {
+        if ((float) $this->tip_amount > 0) {
+            return (float) $this->tip_amount;
+        }
+
         return (float) max(0, (float) $this->amount - $this->exact_payable);
     }
 
@@ -138,12 +160,16 @@ class BillClaim extends Model
 
         $amountPaid = (float) $this->amount;
         $exactPayable = $this->exact_payable;
-        $surplus = $this->surplus;
+        $billAmount = (float) ($this->bill_amount > 0 ? $this->bill_amount : min($amountPaid, $exactPayable));
+        $tipAmount = (float) ($this->tip_amount > 0 ? $this->tip_amount : $this->surplus);
 
         return [
             'id' => $this->id,
             'payer_name' => $this->payer_name,
             'amount' => $amountPaid,
+            'bill_amount' => $billAmount,
+            'tip_amount' => $tipAmount,
+            'has_tip' => $tipAmount > 0,
             'payment_method' => $this->payment_method ?? 'qris',
             'status' => $this->status,
             'created_at_formatted' => $this->created_at ? $this->created_at->translatedFormat('d M Y, H:i').' WIB' : '-',
@@ -158,7 +184,7 @@ class BillClaim extends Model
             'share_service' => $shareServ,
             'share_discount' => $shareDisc,
             'exact_payable' => $exactPayable,
-            'surplus' => $surplus,
+            'surplus' => $tipAmount,
         ];
     }
 }

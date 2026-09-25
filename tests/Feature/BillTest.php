@@ -493,6 +493,11 @@ class BillTest extends TestCase
             'status' => 'pending',
         ]);
 
+        $claim->claimItems()->create([
+            'bill_item_id' => $item->id,
+            'qty' => 2,
+        ]);
+
         // Confirm claim -> should reach 100% and fully settled
         $response = $this->actingAs($host)->postJson("/b/{$bill->slug}/claims/{$claim->id}/confirm");
         $response->assertStatus(200);
@@ -520,5 +525,204 @@ class BillTest extends TestCase
                 'is_fully_settled' => false,
             ],
         ]);
+    }
+
+    public function test_bill_settled_status_is_false_if_only_partial_items_are_confirmed_or_if_items_remain_unclaimed(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create([
+            'user_id' => $host->id,
+            'delivery_fee' => 0,
+            'service_fee' => 0,
+            'discount' => 0,
+        ]);
+
+        $item1 = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'price' => 25000,
+            'qty' => 1,
+        ]);
+
+        $item2 = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'price' => 25000,
+            'qty' => 1,
+        ]);
+
+        // Claim 1: for item 1 only
+        $claim1 = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Budi',
+            'amount' => 25000,
+            'payment_method' => 'qris',
+            'status' => 'confirmed',
+            'confirmed_at' => now(),
+        ]);
+        $claim1->claimItems()->create([
+            'bill_item_id' => $item1->id,
+            'qty' => 1,
+        ]);
+
+        // Item 2 is NOT claimed yet
+        $this->assertFalse($bill->fresh()->isFullySettled());
+
+        // Claim 2: for item 2 (pending)
+        $claim2 = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Citra',
+            'amount' => 25000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+        $claim2->claimItems()->create([
+            'bill_item_id' => $item2->id,
+            'qty' => 1,
+        ]);
+
+        // Still false because claim 2 is pending
+        $this->assertFalse($bill->fresh()->isFullySettled());
+
+        // Host confirms claim 2 -> Now both items are confirmed -> Fully Settled
+        $this->actingAs($host)->postJson("/b/{$bill->slug}/claims/{$claim2->id}/confirm");
+        $this->assertTrue($bill->fresh()->isFullySettled());
+
+        // Host rejects claim 2 -> Reverts to NOT fully settled
+        $this->actingAs($host)->deleteJson("/b/{$bill->slug}/claims/{$claim2->id}/reject");
+        $this->assertFalse($bill->fresh()->isFullySettled());
+    }
+
+    public function test_claim_with_custom_amount_on_non_qris_separates_bill_amount_and_tip_amount(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create([
+            'user_id' => $host->id,
+            'delivery_fee' => 0,
+            'service_fee' => 0,
+            'discount' => 0,
+        ]);
+
+        $item = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'price' => 50000,
+            'qty' => 1,
+        ]);
+
+        $response = $this->postJson("/b/{$bill->slug}/claim", [
+            'payer_name' => 'Doni',
+            'payment_method' => 'BCA',
+            'actual_amount' => 75000,
+            'items' => [
+                $item->id => 1,
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'amount' => 75000,
+            'claim_data' => [
+                'payer_name' => 'Doni',
+                'amount' => 75000,
+                'bill_amount' => 50000,
+                'tip_amount' => 25000,
+                'has_tip' => true,
+            ],
+        ]);
+
+        $this->assertDatabaseHas('bill_claims', [
+            'bill_id' => $bill->id,
+            'payer_name' => 'Doni',
+            'amount' => 75000,
+            'bill_amount' => 50000,
+            'tip_amount' => 25000,
+            'status' => 'pending',
+        ]);
+
+        $claim = BillClaim::where('bill_id', $bill->id)->first();
+        $this->actingAs($host)->postJson("/b/{$bill->slug}/claims/{$claim->id}/confirm");
+
+        $freshBill = $bill->fresh();
+        $this->assertEquals(50000, $freshBill->total_confirmed_paid);
+        $this->assertEquals(25000, $freshBill->total_confirmed_tips);
+        $this->assertEquals(0, $freshBill->remaining_confirmed_amount);
+        $this->assertTrue($freshBill->isFullySettled());
+    }
+
+    public function test_custom_amount_cannot_be_less_than_exact_bill_share(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create([
+            'user_id' => $host->id,
+            'delivery_fee' => 0,
+            'service_fee' => 0,
+            'discount' => 0,
+        ]);
+
+        $item = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'price' => 50000,
+            'qty' => 1,
+        ]);
+
+        $response = $this->postJson("/b/{$bill->slug}/claim", [
+            'payer_name' => 'Fani',
+            'payment_method' => 'Cash',
+            'actual_amount' => 40000, // Less than 50000
+            'items' => [
+                $item->id => 1,
+            ],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'success' => false,
+        ]);
+        $this->assertDatabaseMissing('bill_claims', [
+            'payer_name' => 'Fani',
+        ]);
+    }
+
+    public function test_tip_amount_does_not_affect_remaining_bill_of_other_participants(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create([
+            'user_id' => $host->id,
+            'delivery_fee' => 0,
+            'service_fee' => 0,
+            'discount' => 0,
+        ]);
+
+        $item1 = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'price' => 50000,
+            'qty' => 1,
+        ]);
+
+        $item2 = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'price' => 50000,
+            'qty' => 1,
+        ]);
+
+        // Participant 1 pays 75,000 (50,000 bill + 25,000 tip)
+        $this->postJson("/b/{$bill->slug}/claim", [
+            'payer_name' => 'Kawan 1',
+            'payment_method' => 'Mandiri',
+            'actual_amount' => 75000,
+            'items' => [
+                $item1->id => 1,
+            ],
+        ]);
+
+        $claim1 = BillClaim::where('bill_id', $bill->id)->first();
+        $this->actingAs($host)->postJson("/b/{$bill->slug}/claims/{$claim1->id}/confirm");
+
+        $freshBill = $bill->fresh();
+        // Grand total is 100,000. Confirmed paid for the bill is ONLY 50,000 (not 75,000!)
+        $this->assertEquals(100000, $freshBill->grand_total);
+        $this->assertEquals(50000, $freshBill->total_confirmed_paid);
+        $this->assertEquals(25000, $freshBill->total_confirmed_tips);
+        $this->assertEquals(50000, $freshBill->remaining_confirmed_amount);
+        $this->assertFalse($freshBill->isFullySettled());
     }
 }

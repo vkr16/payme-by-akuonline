@@ -423,11 +423,16 @@ class BillController extends Controller
             $totalPaid = (float) (ceil($exactPaid / 1000) * 1000);
         }
 
-        return DB::transaction(function () use ($bill, $payerName, $totalPaid, $paymentMethod, $validItemsToClaim) {
+        $billAmount = min($totalPaid, $exactPaid);
+        $tipAmount = max(0, $totalPaid - $billAmount);
+
+        return DB::transaction(function () use ($bill, $payerName, $totalPaid, $billAmount, $tipAmount, $paymentMethod, $validItemsToClaim) {
             $claim = BillClaim::create([
                 'bill_id' => $bill->id,
                 'payer_name' => $payerName,
                 'amount' => $totalPaid,
+                'bill_amount' => $billAmount,
+                'tip_amount' => $tipAmount,
                 'payment_method' => $paymentMethod,
                 'status' => 'pending',
             ]);
@@ -500,6 +505,7 @@ class BillController extends Controller
         });
 
         $bill->refresh();
+        $bill->load(['items.claimItems.claim', 'claims']);
         $count = count($confirmedIds);
         $formattedTotal = 'Rp '.number_format($totalAmount, 0, ',', '.');
         $message = "Berhasil mengonfirmasi {$count} klaim pembayaran ({$formattedTotal})!";
@@ -529,6 +535,7 @@ class BillController extends Controller
         ]);
 
         $bill->refresh();
+        $bill->load(['items.claimItems.claim', 'claims']);
         $message = "Pembayaran dari {$claim->payer_name} (Rp ".number_format($claim->amount, 0, ',', '.').') telah dikonfirmasi!';
 
         if ($request->expectsJson() || $request->ajax()) {

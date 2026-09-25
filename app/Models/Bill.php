@@ -99,11 +99,52 @@ class Bill extends Model
     }
 
     /**
-     * Total amount confirmed paid by host.
+     * Total principal amount of the bill confirmed paid by host (excluding tips/extra).
      */
     public function getTotalConfirmedPaidAttribute(): float
     {
-        return (float) $this->claims()->where('status', 'confirmed')->sum('amount');
+        $resolveClaimBillAmount = function ($claim): float {
+            if ((float) $claim->bill_amount > 0) {
+                return (float) $claim->bill_amount;
+            }
+
+            $exact = (float) $claim->exact_payable;
+            if ($exact > 0) {
+                return (float) min($claim->amount, $exact);
+            }
+
+            return (float) $claim->amount;
+        };
+
+        if ($this->relationLoaded('claims')) {
+            return (float) $this->claims->where('status', 'confirmed')->sum($resolveClaimBillAmount);
+        }
+
+        $claims = $this->claims()->where('status', 'confirmed')->get();
+
+        return (float) $claims->sum($resolveClaimBillAmount);
+    }
+
+    /**
+     * Total tips/extra confirmed collected by host.
+     */
+    public function getTotalConfirmedTipsAttribute(): float
+    {
+        $resolveClaimTipAmount = function ($claim): float {
+            if ((float) $claim->tip_amount > 0) {
+                return (float) $claim->tip_amount;
+            }
+
+            return (float) $claim->surplus;
+        };
+
+        if ($this->relationLoaded('claims')) {
+            return (float) $this->claims->where('status', 'confirmed')->sum($resolveClaimTipAmount);
+        }
+
+        $claims = $this->claims()->where('status', 'confirmed')->get();
+
+        return (float) $claims->sum($resolveClaimTipAmount);
     }
 
     /**
@@ -135,13 +176,49 @@ class Bill extends Model
     }
 
     /**
-     * Check if entire bill is fully settled/confirmed.
+     * Check if entire bill is fully settled and verified by host.
+     *
+     * A bill is ONLY fully settled when:
+     * 1. The bill has items ($items->isNotEmpty()).
+     * 2. There is at least one confirmed payment (total_confirmed_paid > 0).
+     * 3. The remaining balance to be confirmed is 0 (remaining_confirmed_amount <= 0.01).
+     * 4. There are NO pending claims waiting for host confirmation.
+     * 5. Every single item in the bill has its required quantity fully confirmed (confirmed_claimed_qty >= qty).
      */
     public function isFullySettled(): bool
     {
-        $hasItems = $this->relationLoaded('items') ? $this->items->count() > 0 : $this->items()->exists();
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+        if ($items->isEmpty()) {
+            return false;
+        }
 
-        return $hasItems && $this->remaining_confirmed_amount <= 0;
+        // Must have at least one confirmed payment
+        if ($this->total_confirmed_paid <= 0) {
+            return false;
+        }
+
+        // Must have 0 remaining unpaid monetary balance
+        if ($this->remaining_confirmed_amount > 0.01) {
+            return false;
+        }
+
+        // Must NOT have pending claims waiting for confirmation
+        $hasPendingClaims = $this->relationLoaded('claims')
+            ? $this->claims->where('status', 'pending')->count() > 0
+            : $this->claims()->where('status', 'pending')->exists();
+
+        if ($hasPendingClaims) {
+            return false;
+        }
+
+        // Every item must be fully confirmed
+        foreach ($items as $item) {
+            if ($item->confirmed_claimed_qty < $item->qty) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -167,6 +244,9 @@ class Bill extends Model
             'grand_total_formatted' => 'Rp '.number_format($this->grand_total, 0, ',', '.'),
             'total_confirmed_paid' => (float) $this->total_confirmed_paid,
             'total_confirmed_paid_formatted' => 'Rp '.number_format($this->total_confirmed_paid, 0, ',', '.'),
+            'total_confirmed_tips' => (float) $this->total_confirmed_tips,
+            'total_confirmed_tips_formatted' => 'Rp '.number_format($this->total_confirmed_tips, 0, ',', '.'),
+            'has_tips' => $this->total_confirmed_tips > 0,
             'remaining_confirmed_amount' => (float) $this->remaining_confirmed_amount,
             'remaining_confirmed_amount_formatted' => 'Rp '.number_format($this->remaining_confirmed_amount, 0, ',', '.'),
             'progress_percentage' => (float) $this->progress_percentage,

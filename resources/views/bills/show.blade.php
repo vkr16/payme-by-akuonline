@@ -41,7 +41,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
-                <button type="button" id="btnHostBannerBatchConfirm" class="{{ $pendingCount > 0 ? '' : 'hidden ' }}px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer" title="Konfirmasi sekaligus klaim yang menunggu">
+                <button type="button" id="btnHostBannerBatchConfirm" class="{{ $pendingCount > 0 ? 'flex' : 'hidden' }} px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold text-xs transition-colors items-center gap-1.5 shadow-2xs cursor-pointer" style="{{ $pendingCount > 0 ? '' : 'display: none !important;' }}" title="Konfirmasi sekaligus klaim yang menunggu">
                     <i class="fa-light fa-check-double text-xs"></i>
                     <span><span id="bannerPendingCount">{{ $pendingCount }}</span> Menunggu</span>
                 </button>
@@ -64,7 +64,7 @@
                 <span>{{ $bill->created_at->translatedFormat('d M Y') }}</span>
             </span>
 
-            <span id="billSettledBadge" class="{{ $bill->isFullySettled() ? '' : 'hidden ' }}inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-white shadow-2xs">
+            <span id="billSettledBadge" class="{{ $bill->isFullySettled() ? 'inline-flex' : 'hidden' }} items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-white shadow-2xs" style="{{ $bill->isFullySettled() ? '' : 'display: none !important;' }}">
                 <i class="fa-light fa-badge-check"></i>
                 <span>LUNAS TERVERIFIKASI</span>
             </span>
@@ -98,8 +98,11 @@
                 <div class="w-full bg-zinc-200 rounded-full h-2 overflow-hidden">
                     <div id="billProgressBar" class="bg-emerald-600 h-2 rounded-full transition-all duration-500" style="width: {{ $bill->progress_percentage }}%"></div>
                 </div>
-                <div class="flex justify-between text-[10px] text-zinc-400">
+                <div class="flex justify-between items-center text-[10px] text-zinc-400">
                     <span id="billRemainingAmountText">Sisa: Rp {{ number_format($bill->remaining_confirmed_amount, 0, ',', '.') }}</span>
+                    <span id="billTotalTipsText" class="{{ $bill->total_confirmed_tips > 0 ? '' : 'hidden ' }}text-emerald-700 font-semibold inline-flex items-center gap-1">
+                        <i class="fa-light fa-gift text-[9px]"></i> Tip: Rp {{ number_format($bill->total_confirmed_tips, 0, ',', '.') }}
+                    </span>
                     <span>{{ $bill->items->sum('qty') }} item total</span>
                 </div>
             </div>
@@ -290,7 +293,7 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap">
                 @if($isHost)
-                    <button type="button" id="btnOpenBatchConfirmModal" class="{{ $pendingCount > 0 ? '' : 'hidden ' }}touch-target px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs inline-flex items-center gap-1.5 transition-all cursor-pointer" title="Buka konfirmasi massal">
+                    <button type="button" id="btnOpenBatchConfirmModal" class="{{ $pendingCount > 0 ? 'inline-flex' : 'hidden' }} touch-target px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs items-center gap-1.5 transition-all cursor-pointer" style="{{ $pendingCount > 0 ? '' : 'display: none !important;' }}" title="Buka konfirmasi massal">
                         <i class="fa-light fa-check-double text-xs"></i>
                         <span>Konfirmasi Sekaligus (<span id="batchBtnPendingCount">{{ $pendingCount }}</span>)</span>
                     </button>
@@ -357,6 +360,12 @@
                                 <div class="text-sm sm:text-base font-extrabold text-emerald-900 tabular-nums">
                                     Rp {{ number_format($claim->amount, 0, ',', '.') }}
                                 </div>
+                                @if(($claim->tip_amount ?? 0) > 0)
+                                    <div class="text-[10px] text-emerald-700 font-semibold flex items-center justify-end gap-1">
+                                        <i class="fa-light fa-gift text-[9px]"></i>
+                                        <span>+Tip Rp {{ number_format($claim->tip_amount, 0, ',', '.') }}</span>
+                                    </div>
+                                @endif
                             </div>
                             <i class="fa-light fa-chevron-right text-zinc-400 text-xs"></i>
                         </div>
@@ -485,11 +494,58 @@
                 </select>
             </div>
 
-            <!-- Amount Breakdown Preview -->
-            <div class="p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs space-y-1">
-                <div class="flex justify-between text-zinc-500">
-                    <span>Nominal Tagihan:</span>
-                    <span id="claimAmountPreview" class="font-bold text-emerald-900 tabular-nums">Rp 0</span>
+            <!-- Nominal Yang Dibayarkan -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center">
+                    <label for="claimCustomAmount" class="block text-xs font-bold text-zinc-700">
+                        Nominal Dibayarkan
+                    </label>
+                    <span id="claimMethodLockNotice" class="text-[10px] text-zinc-400 font-medium flex items-center gap-1">
+                        <i class="fa-light fa-lock text-[10px]"></i> Terkunci (QRIS)
+                    </span>
+                </div>
+
+                <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">Rp</span>
+                    <input type="text" id="claimCustomAmount" readonly
+                        class="touch-target w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-zinc-100 text-zinc-600 border border-zinc-300 rounded-xl focus:outline-none text-zinc-900 font-bold tabular-nums transition-colors cursor-not-allowed"
+                        placeholder="0">
+                </div>
+
+                <!-- Quick Tip Chips (Visible only for non-QRIS) -->
+                <div id="quickTipChipsContainer" class="hidden pt-1 items-center gap-1.5 flex-wrap">
+                    <span class="text-[10px] font-semibold text-zinc-400 mr-1">Opsi Cepat:</span>
+                    <button type="button" class="btn-quick-chip px-2 py-0.5 rounded-lg bg-zinc-100 hover:bg-emerald-50 hover:text-emerald-800 text-[11px] font-semibold text-zinc-600 border border-zinc-200 cursor-pointer transition-colors" data-chip="exact">
+                        Pas
+                    </button>
+                    <button type="button" class="btn-quick-chip px-2 py-0.5 rounded-lg bg-zinc-100 hover:bg-emerald-50 hover:text-emerald-800 text-[11px] font-semibold text-zinc-600 border border-zinc-200 cursor-pointer transition-colors" data-chip="2000">
+                        +Rp 2.000
+                    </button>
+                    <button type="button" class="btn-quick-chip px-2 py-0.5 rounded-lg bg-zinc-100 hover:bg-emerald-50 hover:text-emerald-800 text-[11px] font-semibold text-zinc-600 border border-zinc-200 cursor-pointer transition-colors" data-chip="5000">
+                        +Rp 5.000
+                    </button>
+                    <button type="button" class="btn-quick-chip px-2 py-0.5 rounded-lg bg-zinc-100 hover:bg-emerald-50 hover:text-emerald-800 text-[11px] font-semibold text-zinc-600 border border-zinc-200 cursor-pointer transition-colors" data-chip="10000">
+                        +Rp 10.000
+                    </button>
+                </div>
+
+                <!-- Amount Breakdown Preview -->
+                <div class="p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs space-y-1">
+                    <div class="flex justify-between text-zinc-500">
+                        <span>Tagihan Pokok Menu:</span>
+                        <span id="claimAmountPreview" class="font-bold text-zinc-800 tabular-nums">Rp 0</span>
+                    </div>
+                    <div id="claimTipBreakdownRow" class="hidden justify-between text-emerald-700 font-semibold pt-1 border-t border-zinc-200/60">
+                        <span class="flex items-center gap-1">
+                            <i class="fa-light fa-gift text-emerald-600"></i>
+                            <span>Tip / Extra untuk Host:</span>
+                        </span>
+                        <span id="claimTipPreview" class="tabular-nums font-bold">+Rp 0</span>
+                    </div>
+                    <div id="claimTotalTransferRow" class="hidden justify-between text-zinc-900 font-black pt-1 border-t border-zinc-200">
+                        <span>Total Ditransfer:</span>
+                        <span id="claimTotalTransferPreview" class="tabular-nums text-emerald-900 font-black">Rp 0</span>
+                    </div>
                 </div>
             </div>
 
@@ -799,6 +855,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const claimAmountPreview = document.getElementById('claimAmountPreview');
     const claimModalAlert = document.getElementById('claimModalAlert');
     const btnSubmitClaim = document.getElementById('btnSubmitClaim');
+    const claimCustomAmount = document.getElementById('claimCustomAmount');
+    const claimMethodLockNotice = document.getElementById('claimMethodLockNotice');
+    const quickTipChipsContainer = document.getElementById('quickTipChipsContainer');
+    const claimTipBreakdownRow = document.getElementById('claimTipBreakdownRow');
+    const claimTipPreview = document.getElementById('claimTipPreview');
+    const claimTotalTransferRow = document.getElementById('claimTotalTransferRow');
+    const claimTotalTransferPreview = document.getElementById('claimTotalTransferPreview');
 
     // Claim Detail Modal
     const claimDetailModal = document.getElementById('claimDetailModal');
@@ -1058,6 +1121,79 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function parseRupiahInput(str) {
+        if (!str) return 0;
+        const cleaned = String(str).replace(/[^0-9]/g, '');
+        return parseInt(cleaned || '0', 10);
+    }
+
+    function updateTipBreakdownUI(enteredAmount, exact) {
+        if (!claimTipPreview || !claimTipBreakdownRow || !claimTotalTransferRow || !claimTotalTransferPreview) return;
+        if (enteredAmount > exact) {
+            const tip = enteredAmount - exact;
+            claimTipPreview.textContent = `+${formatRupiah(tip)}`;
+            claimTipBreakdownRow.classList.remove('hidden');
+            claimTipBreakdownRow.classList.add('flex');
+
+            claimTotalTransferPreview.textContent = formatRupiah(enteredAmount);
+            claimTotalTransferRow.classList.remove('hidden');
+            claimTotalTransferRow.classList.add('flex');
+        } else {
+            claimTipBreakdownRow.classList.add('hidden');
+            claimTipBreakdownRow.classList.remove('flex');
+
+            claimTotalTransferRow.classList.add('hidden');
+            claimTotalTransferRow.classList.remove('flex');
+        }
+    }
+
+    function syncClaimModalAmounts(customVal) {
+        const exact = Math.round(currentCalculatedTotal || 0);
+        if (claimAmountPreview) {
+            claimAmountPreview.textContent = formatRupiah(exact);
+        }
+
+        const method = (claimPaymentMethod ? claimPaymentMethod.value : 'qris').toLowerCase();
+        const isQris = method === 'qris';
+
+        if (isQris) {
+            if (claimCustomAmount) {
+                claimCustomAmount.readOnly = true;
+                claimCustomAmount.classList.add('bg-zinc-100', 'text-zinc-600', 'cursor-not-allowed');
+                claimCustomAmount.classList.remove('bg-white', 'text-zinc-900', 'border-emerald-600');
+                claimCustomAmount.value = new Intl.NumberFormat('id-ID').format(exact);
+            }
+            if (claimMethodLockNotice) {
+                claimMethodLockNotice.innerHTML = '<i class="fa-light fa-lock text-[10px]"></i> Terkunci (QRIS)';
+            }
+            if (quickTipChipsContainer) {
+                quickTipChipsContainer.classList.add('hidden');
+                quickTipChipsContainer.classList.remove('flex');
+            }
+            updateTipBreakdownUI(exact, exact);
+        } else {
+            if (claimCustomAmount) {
+                claimCustomAmount.readOnly = false;
+                claimCustomAmount.classList.remove('bg-zinc-100', 'text-zinc-600', 'cursor-not-allowed');
+                claimCustomAmount.classList.add('bg-white', 'text-zinc-900');
+
+                let targetVal = customVal !== undefined ? customVal : parseRupiahInput(claimCustomAmount.value);
+                if (!targetVal || targetVal < exact) {
+                    targetVal = exact;
+                }
+                claimCustomAmount.value = new Intl.NumberFormat('id-ID').format(targetVal);
+                updateTipBreakdownUI(targetVal, exact);
+            }
+            if (claimMethodLockNotice) {
+                claimMethodLockNotice.innerHTML = '<i class="fa-light fa-pen-to-square text-[10px] text-emerald-600"></i> Bebas edit / tambah Tip';
+            }
+            if (quickTipChipsContainer) {
+                quickTipChipsContainer.classList.remove('hidden');
+                quickTipChipsContainer.classList.add('flex');
+            }
+        }
+    }
+
     // Open Claim Modal
     function openClaimModal() {
         const selected = getSelectedItems();
@@ -1070,11 +1206,54 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        claimAmountPreview.textContent = formatRupiah(currentCalculatedTotal);
-        claimModalAlert.className = 'hidden';
+        syncClaimModalAmounts();
+        if (claimModalAlert) {
+            claimModalAlert.className = 'hidden';
+            claimModalAlert.innerHTML = '';
+        }
         claimModal.classList.remove('hidden');
         claimPayerName.focus();
     }
+
+    if (claimPaymentMethod) {
+        claimPaymentMethod.addEventListener('change', function () {
+            syncClaimModalAmounts();
+        });
+    }
+
+    if (claimCustomAmount) {
+        claimCustomAmount.addEventListener('input', function () {
+            const exact = Math.round(currentCalculatedTotal || 0);
+            const raw = parseRupiahInput(this.value);
+            this.value = raw > 0 ? new Intl.NumberFormat('id-ID').format(raw) : '';
+            updateTipBreakdownUI(raw, exact);
+            if (raw < exact) {
+                claimModalAlert.className = 'p-2.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 block';
+                claimModalAlert.innerHTML = `<i class="fa-light fa-circle-exclamation text-amber-600 mr-1"></i> Nominal kurang dari tagihan pokok (${formatRupiah(exact)}).`;
+            } else {
+                claimModalAlert.className = 'hidden';
+                claimModalAlert.innerHTML = '';
+            }
+        });
+    }
+
+    document.querySelectorAll('.btn-quick-chip').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const chip = this.dataset.chip;
+            const exact = Math.round(currentCalculatedTotal || 0);
+            let target = exact;
+            if (chip === '2000') target = exact + 2000;
+            else if (chip === '5000') target = exact + 5000;
+            else if (chip === '10000') target = exact + 10000;
+            else target = exact;
+
+            syncClaimModalAmounts(target);
+            if (claimModalAlert) {
+                claimModalAlert.className = 'hidden';
+                claimModalAlert.innerHTML = '';
+            }
+        });
+    });
 
     if (btnOpenClaimModal) {
         btnOpenClaimModal.addEventListener('click', openClaimModal);
@@ -1341,6 +1520,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="text-sm sm:text-base font-extrabold text-emerald-900 tabular-nums">
                             ${formatRupiah(claim.amount)}
                         </div>
+                        ${(claim.tip_amount && claim.tip_amount > 0) ? `
+                            <div class="text-[10px] text-emerald-700 font-semibold flex items-center justify-end gap-1">
+                                <i class="fa-light fa-gift text-[9px]"></i>
+                                <span>+Tip ${formatRupiah(claim.tip_amount)}</span>
+                            </div>
+                        ` : ''}
                     </div>
                     <i class="fa-light fa-chevron-right text-zinc-400 text-xs"></i>
                 </div>
@@ -1429,6 +1614,21 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        const exact = Math.round(currentCalculatedTotal || 0);
+        let actualAmount = exact;
+        const isQris = method.toLowerCase() === 'qris';
+        if (!isQris && claimCustomAmount) {
+            actualAmount = parseRupiahInput(claimCustomAmount.value);
+            if (actualAmount < exact) {
+                const errorMsg = `Nominal yang dibayarkan (${formatRupiah(actualAmount)}) tidak boleh lebih kecil dari tagihan kamu (${formatRupiah(exact)}).`;
+                if (window.Notiflix) Notiflix.Notify.warning(errorMsg);
+                claimModalAlert.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-900 border border-rose-200 block';
+                claimModalAlert.innerHTML = `<i class="fa-light fa-circle-exclamation text-rose-600 mr-1"></i> ${escapeHtml(errorMsg)}`;
+                claimCustomAmount.focus();
+                return;
+            }
+        }
+
         isClaimSubmitting = true;
         btnSubmitClaim.disabled = true;
         btnSubmitClaim.classList.add('opacity-50', 'pointer-events-none');
@@ -1450,6 +1650,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     payer_name: name,
                     payment_method: method,
                     items: selected,
+                    actual_amount: actualAmount,
                     round_up: partRoundUp ? partRoundUp.checked : false
                 })
             });
@@ -1531,17 +1732,44 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateBillSummary(summary) {
         if (!summary) {
             const claims = Object.values(window.claimDetailsData || {});
-            const confirmedTotal = claims
-                .filter(c => c.status === 'confirmed')
-                .reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
+            const confirmedClaims = claims.filter(c => c.status === 'confirmed');
+            const pendingClaims = claims.filter(c => c.status === 'pending');
+            const confirmedBillTotal = confirmedClaims.reduce((sum, c) => sum + parseFloat(c.bill_amount || c.amount || 0), 0);
+            const confirmedTipsTotal = confirmedClaims.reduce((sum, c) => sum + parseFloat(c.tip_amount || c.surplus || 0), 0);
             const grandTotal = {{ (float) $bill->grand_total }};
-            const remaining = Math.max(0, grandTotal - confirmedTotal);
-            const pct = grandTotal > 0 ? Math.min(100, Math.round((confirmedTotal / grandTotal) * 1000) / 10) : 100;
+            const remaining = Math.max(0, grandTotal - confirmedBillTotal);
+            const pct = grandTotal > 0 ? Math.min(100, Math.round((confirmedBillTotal / grandTotal) * 1000) / 10) : 0;
+            // Check item-by-item confirmation
+            const cards = document.querySelectorAll('#participantItemsContainer .item-selection-card');
+            let allItemsConfirmed = cards.length > 0;
+            const confirmedItemQtyMap = {};
+            confirmedClaims.forEach(c => {
+                (c.items || []).forEach(it => {
+                    const iId = it.item_id || it.id;
+                    confirmedItemQtyMap[iId] = (confirmedItemQtyMap[iId] || 0) + parseInt(it.qty || 0, 10);
+                });
+            });
+
+            cards.forEach(card => {
+                const itemId = card.getAttribute('data-item-id');
+                const totalQty = parseInt(card.getAttribute('data-total') || '0', 10);
+                const confirmedQty = confirmedItemQtyMap[itemId] || 0;
+                if (confirmedQty < totalQty) {
+                    allItemsConfirmed = false;
+                }
+            });
+
+            const isFullySettled = confirmedBillTotal > 0
+                && remaining <= 0.01
+                && pendingClaims.length === 0
+                && allItemsConfirmed;
+
             summary = {
-                total_confirmed_paid: confirmedTotal,
+                total_confirmed_paid: confirmedBillTotal,
+                total_confirmed_tips: confirmedTipsTotal,
                 progress_percentage: pct,
                 remaining_confirmed_amount: remaining,
-                is_fully_settled: remaining <= 0 && {{ $bill->items->count() > 0 ? 'true' : 'false' }},
+                is_fully_settled: isFullySettled,
                 total_claims_count: claims.length,
             };
         }
@@ -1561,12 +1789,27 @@ document.addEventListener('DOMContentLoaded', function () {
             remainingTextEl.textContent = `Sisa: ${formatRupiah(summary.remaining_confirmed_amount)}`;
         }
 
+        const totalTipsEl = document.getElementById('billTotalTipsText');
+        if (totalTipsEl) {
+            const tips = summary.total_confirmed_tips !== undefined ? summary.total_confirmed_tips : 0;
+            if (tips > 0) {
+                totalTipsEl.innerHTML = `<i class="fa-light fa-gift text-[9px]"></i> Tip: ${formatRupiah(tips)}`;
+                totalTipsEl.classList.remove('hidden');
+            } else {
+                totalTipsEl.classList.add('hidden');
+            }
+        }
+
         const settledBadge = document.getElementById('billSettledBadge');
         if (settledBadge) {
             if (summary.is_fully_settled) {
                 settledBadge.classList.remove('hidden');
+                settledBadge.classList.add('inline-flex');
+                settledBadge.style.setProperty('display', 'inline-flex', 'important');
             } else {
+                settledBadge.classList.remove('inline-flex');
                 settledBadge.classList.add('hidden');
+                settledBadge.style.setProperty('display', 'none', 'important');
             }
         }
 
@@ -1605,8 +1848,12 @@ document.addEventListener('DOMContentLoaded', function () {
             bannerCount.innerText = pendingCount;
             if (pendingCount > 0) {
                 bannerBtn.classList.remove('hidden');
+                bannerBtn.classList.add('flex');
+                bannerBtn.style.setProperty('display', 'flex', 'important');
             } else {
+                bannerBtn.classList.remove('flex');
                 bannerBtn.classList.add('hidden');
+                bannerBtn.style.setProperty('display', 'none', 'important');
             }
         }
 
@@ -1616,8 +1863,12 @@ document.addEventListener('DOMContentLoaded', function () {
             batchBtnCount.innerText = pendingCount;
             if (pendingCount > 0) {
                 batchOpenBtn.classList.remove('hidden');
+                batchOpenBtn.classList.add('inline-flex');
+                batchOpenBtn.style.setProperty('display', 'inline-flex', 'important');
             } else {
+                batchOpenBtn.classList.remove('inline-flex');
                 batchOpenBtn.classList.add('hidden');
+                batchOpenBtn.style.setProperty('display', 'none', 'important');
             }
         }
     }
@@ -2047,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const surplusBadge = document.getElementById('detailSurplusBadge');
         if (data.surplus > 0) {
             surplusBadge.classList.remove('hidden');
-            document.getElementById('detailSurplusText').innerText = `+${formatRupiah(data.surplus)} Tip / Pembulatan`;
+            document.getElementById('detailSurplusText').innerText = `+${formatRupiah(data.surplus)} Tip / Extra`;
         } else {
             surplusBadge.classList.add('hidden');
         }
