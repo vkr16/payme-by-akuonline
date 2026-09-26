@@ -62,6 +62,13 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        $intendedUrl = $request->session()->get('url.intended');
+        if (is_string($intendedUrl) && str_starts_with($intendedUrl, 'http:') && ! str_starts_with($intendedUrl, 'http://')) {
+            $request->session()->forget('url.intended');
+        } elseif (is_string($intendedUrl) && str_starts_with($intendedUrl, 'https:') && ! str_starts_with($intendedUrl, 'https://')) {
+            $request->session()->forget('url.intended');
+        }
+
         return redirect()->intended(route('dashboard'))->with('success', 'Selamat datang kembali, '.$user->name.'!');
     }
 
