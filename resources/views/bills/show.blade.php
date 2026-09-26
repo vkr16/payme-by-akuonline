@@ -66,7 +66,7 @@
                             Menunggu Konfirmasi
                         </span>
                     </div>
-                    <p class="text-xs text-zinc-600 truncate sm:whitespace-normal" id="postTxSuccessDesc">
+                    <p class="text-xs text-zinc-600 break-words leading-relaxed" id="postTxSuccessDesc">
                         Klaim pembayaranmu telah dicatat. Suka PayMe? Yuk traktir kopi mas dev!
                     </p>
                 </div>
@@ -227,8 +227,8 @@
                         </div>
                     </div>
 
-                    <!-- Right: Tactile Stepper & Subtotal -->
-                    <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+                    <!-- Right: Tactile Stepper & Subtotal (Stacked on mobile, inline on desktop) -->
+                    <div class="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
                         <div class="item-stepper-box flex items-center bg-zinc-50 border border-zinc-200 rounded-lg p-0.5 {{ $isSoldOut ? 'hidden' : '' }}">
                             <button type="button" class="stepper-btn btn-part-minus w-6 h-6 sm:w-7 sm:h-7 rounded flex items-center justify-center text-zinc-600 hover:text-zinc-900 hover:bg-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer" disabled>
                                 <i class="fa-light fa-minus text-[9px] sm:text-[10px]"></i>
@@ -238,7 +238,7 @@
                                 <i class="fa-light fa-plus text-[9px] sm:text-[10px]"></i>
                             </button>
                         </div>
-                        <span class="item-subtotal text-xs font-bold text-zinc-400 tabular-nums w-16 sm:w-20 text-right {{ $isSoldOut ? 'hidden' : '' }}">Rp 0</span>
+                        <span class="item-subtotal text-[11px] sm:text-xs font-bold text-zinc-400 tabular-nums text-right sm:w-20 {{ $isSoldOut ? 'hidden' : '' }}">Rp 0</span>
                         <span class="item-sold-out-text text-xs font-semibold text-zinc-400 tabular-nums px-2 {{ $isSoldOut ? '' : 'hidden' }}">Selesai</span>
                     </div>
                 </div>
@@ -282,7 +282,7 @@
             <div class="pt-2 border-t border-zinc-200/80 flex items-center justify-between">
                 <label class="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" id="partRoundUp" class="w-4 h-4 rounded border-zinc-300 text-emerald-800 focus:ring-emerald-700 cursor-pointer accent-emerald-800" autocomplete="off">
-                    <span class="text-xs text-zinc-700 font-medium">Bulatkan ke atas (Tip/Donasi untuk Host)</span>
+                    <span class="text-xs text-zinc-700 font-medium">Bulatkan sebagai tip</span>
                 </label>
                 <span id="partRoundUpBadge" class="hidden text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">+Rp 0</span>
             </div>
@@ -746,7 +746,7 @@
                 </div>
 
                 <!-- Amount Breakdown Preview -->
-                <div class="rounded-xl border border-zinc-200/90 bg-zinc-50 overflow-hidden text-left transition-all">
+                <div class="rounded-2xl border border-zinc-200/90 bg-zinc-50/70 overflow-hidden text-left transition-all">
                     <button type="button" id="btnToggleClaimModalDetails" class="w-full p-2.5 sm:p-3 flex items-center justify-between gap-2 text-xs font-bold text-zinc-700 hover:text-emerald-800 transition-colors cursor-pointer select-none">
                         <span class="flex items-center gap-1.5">
                             <i class="fa-light fa-receipt text-emerald-700"></i>
@@ -786,32 +786,16 @@
                                 <span class="font-semibold text-emerald-800 tabular-nums" id="claimModalBreakdownDiscount">-Rp 0</span>
                             </div>
                             <div class="hidden justify-between text-emerald-700" id="claimModalRowRoundUp">
-                                <span>Pembulatan:</span>
+                                <span>Pembulatan/Tip:</span>
                                 <span class="font-semibold text-emerald-800 tabular-nums" id="claimModalBreakdownRoundUp">+Rp 0</span>
                             </div>
                             <div class="pt-1.5 border-t border-zinc-200 flex justify-between font-bold text-zinc-900 text-xs">
-                                <span>Tagihan Pokok:</span>
+                                <span>Total Ditransfer:</span>
                                 <span class="tabular-nums font-bold text-zinc-900" id="claimModalBreakdownTotal">Rp 0</span>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Tip & Total Transfer Rows -->
-                    <div class="p-3 pt-1 border-t border-zinc-200/60 text-xs space-y-1">
-                        <div id="claimTipBreakdownRow" class="hidden justify-between text-emerald-700 font-semibold pt-1">
-                            <span class="flex items-center gap-1">
-                                <i class="fa-light fa-gift text-emerald-600"></i>
-                                <span>Tip / Extra untuk Host:</span>
-                            </span>
-                            <span id="claimTipPreview" class="tabular-nums font-bold">+Rp 0</span>
-                        </div>
-                        <div id="claimTotalTransferRow" class="hidden justify-between text-zinc-900 font-black pt-1 border-t border-zinc-200">
-                            <span>Total Ditransfer:</span>
-                            <span id="claimTotalTransferPreview" class="tabular-nums text-emerald-900 font-black">Rp 0</span>
-                        </div>
-                    </div>
                 </div>
-            </div>
 
             <div id="claimModalAlert" class="hidden p-2.5 rounded-lg text-xs font-medium"></div>
 
@@ -1132,11 +1116,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const claimCustomAmount = document.getElementById('claimCustomAmount');
     const claimMethodLockNotice = document.getElementById('claimMethodLockNotice');
     const quickTipChipsContainer = document.getElementById('quickTipChipsContainer');
-    const claimTipBreakdownRow = document.getElementById('claimTipBreakdownRow');
-    const claimTipPreview = document.getElementById('claimTipPreview');
-    const claimTotalTransferRow = document.getElementById('claimTotalTransferRow');
-    const claimTotalTransferPreview = document.getElementById('claimTotalTransferPreview');
-
     // Claim Detail Modal
     const claimDetailModal = document.getElementById('claimDetailModal');
     const btnCloseClaimDetailModal = document.getElementById('btnCloseClaimDetailModal');
@@ -1733,7 +1712,7 @@ document.addEventListener('DOMContentLoaded', function () {
             postTxSuccessTitle.textContent = `Terima kasih, ${payerName}! 🎉`;
         }
         if (postTxSuccessDesc && amount) {
-            postTxSuccessDesc.innerHTML = `Klaim pembayaranmu sebesar <strong>${formatRupiah(amount)}</strong> telah dicatat. <br>Suka PayMe? Yuk traktir kopi mas dev! ☕`;
+            postTxSuccessDesc.innerHTML = `Klaim pembayaranmu sebesar <strong>${formatRupiah(amount)}</strong> telah dicatat. <br>Suka PayMe? Yuk traktir kopi mas dev!`;
         }
         postTransactionAlert.classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1784,22 +1763,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updateTipBreakdownUI(enteredAmount, exact) {
-        if (!claimTipPreview || !claimTipBreakdownRow || !claimTotalTransferRow || !claimTotalTransferPreview) return;
-        if (enteredAmount > exact) {
-            const tip = enteredAmount - exact;
-            claimTipPreview.textContent = `+${formatRupiah(tip)}`;
-            claimTipBreakdownRow.classList.remove('hidden');
-            claimTipBreakdownRow.classList.add('flex');
+        const roundUpExtra = Math.round(lastCalculatedData?.round_up_extra || 0);
+        const tipExtra = (enteredAmount && enteredAmount > exact) ? (enteredAmount - exact) : 0;
+        const totalExtra = roundUpExtra + tipExtra;
 
-            claimTotalTransferPreview.textContent = formatRupiah(enteredAmount);
-            claimTotalTransferRow.classList.remove('hidden');
-            claimTotalTransferRow.classList.add('flex');
-        } else {
-            claimTipBreakdownRow.classList.add('hidden');
-            claimTipBreakdownRow.classList.remove('flex');
+        if (claimModalRowRoundUp && claimModalBreakdownRoundUp) {
+            if (totalExtra > 0) {
+                claimModalRowRoundUp.classList.remove('hidden');
+                claimModalRowRoundUp.classList.add('flex');
+                claimModalBreakdownRoundUp.textContent = `+${formatRupiah(totalExtra)}`;
+            } else {
+                claimModalRowRoundUp.classList.add('hidden');
+                claimModalRowRoundUp.classList.remove('flex');
+            }
+        }
 
-            claimTotalTransferRow.classList.add('hidden');
-            claimTotalTransferRow.classList.remove('flex');
+        if (claimModalBreakdownTotal) {
+            const finalTotal = enteredAmount && enteredAmount >= exact ? enteredAmount : exact;
+            claimModalBreakdownTotal.textContent = formatRupiah(finalTotal);
         }
     }
 

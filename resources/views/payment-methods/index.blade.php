@@ -112,7 +112,7 @@
 
                                 <button type="button" onclick="previewQris({{ json_encode($qris) }})" class="tactile-btn px-2.5 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-emerald-600 text-zinc-700 hover:text-emerald-800 text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5">
                                     <i class="fa-light fa-eye text-xs"></i>
-                                    <span>Lihat QR</span>
+                                    <span>Lihat&nbsp;QR</span>
                                 </button>
                             </div>
 
