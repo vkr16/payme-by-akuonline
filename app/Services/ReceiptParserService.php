@@ -113,10 +113,12 @@ class ReceiptParserService
         $mimeType = mime_content_type($filePath) ?: 'image/jpeg';
         $base64Image = 'data:'.$mimeType.';base64,'.base64_encode($imageBytes);
 
+        $priceInstruction = '';
         if ($priceType === 'total_price') {
-            $priceInstruction = 'Pengguna memilih format "Harga total". Harga total berarti harga yang tampil di baris item di struk merupakan harga total dari jumlah item tersebut, jadi untuk menafsirkan harga satuannya harus dibagi dengan quantity/jumlahnya dulu (price = nominal di baris struk / qty). Pastikan field `price` pada JSON merupakan harga satuan hasil pembagian tersebut.';
+            $priceInstruction = 'PETUNJUK USER (PENTING): Pengguna mengonfirmasi bahwa nominal yang tertera pada kolom harga di struk adalah TOTAL HARGA BARIS / TOTAL KUANTITAS (Subtotal untuk `qty` barang tersebut). Kamu HARUS MEMBAGI nominal tersebut dengan `qty` (yaitu price_satuan = nominal / qty) agar field `price` pada JSON berisi HARGA SATUAN per 1 pcs.';
         } else {
-            $priceInstruction = 'Pengguna memilih format "Harga satuan". Harga satuan berarti harga yang tampil di baris item di struk adalah harga 1 item produk terkait. Ambil langsung nominal tersebut tanpa membaginya dengan quantity/jumlahnya sebagai field `price`.';
+            // Default: unit_price
+            $priceInstruction = 'PETUNJUK USER (PENTING - DEFAULT): Pengguna mengonfirmasi bahwa nominal yang tertera pada kolom harga di struk adalah HARGA SATUAN (Unit Price per 1 pcs). Ambil angka tersebut langsung tanpa membaginya dengan `qty` sebagai field `price`.';
         }
 
         $prompt = <<<PROMPT
@@ -138,12 +140,7 @@ Tugas Anda adalah membaca gambar struk ini dan mengembalikan JSON HANYA dengan s
   "total": 33000
 }
 
-ATURAN FORMAT STRUK:
-Di bagian format struk terdapat 2 opsi:
-- Harga satuan: Harga yang tampil di baris item di struk adalah harga 1 item produk terkait.
-- Harga total: Harga yang tampil di baris item di struk merupakan harga total dari jumlah item tersebut, jadi untuk menafsirkan harga satuannya harus dibagi dengan quantity/jumlahnya dulu.
-
-KONDISI PILIHAN FORMAT PENGGUNA SAAT INI:
+ATURAN DEDUKSI HARGA:
 {$priceInstruction}
 
 Aturan Tambahan:
