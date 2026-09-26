@@ -198,13 +198,14 @@ class BillController extends Controller
             if ($request->boolean('enable_bank')) {
                 // Attach selected saved banks
                 if (! empty($validated['selected_bank_ids'])) {
-                    $selectedBanks = $user->banks()->whereIn('id', $validated['selected_bank_ids'])->get();
+                    $selectedBanks = $user->banks()->whereIn('id', $validated['selected_bank_ids'])->orderByDesc('is_default')->get();
                     foreach ($selectedBanks as $bank) {
                         BillBank::create([
                             'bill_id' => $bill->id,
                             'bank_name' => $bank->bank_name,
                             'account_number' => $bank->account_number,
                             'account_holder' => $bank->account_holder,
+                            'is_primary' => (bool) $bank->is_default,
                         ]);
                     }
                 }
@@ -246,7 +247,7 @@ class BillController extends Controller
     /**
      * Display bill page for participants and host.
      */
-    public function show(string $slug): View
+    public function show(string $slug, QrisService $qrisService): View
     {
         $bill = Bill::with([
             'user',
@@ -266,6 +267,7 @@ class BillController extends Controller
             'bill' => $bill,
             'isHost' => $isHost,
             'claimsDetailData' => $claimsDetailData,
+            'developerQrisPayload' => $qrisService->getDeveloperQrisPayload(),
         ]);
     }
 

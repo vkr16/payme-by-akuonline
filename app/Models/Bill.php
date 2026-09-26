@@ -61,7 +61,7 @@ class Bill extends Model
      */
     public function banks(): HasMany
     {
-        return $this->hasMany(BillBank::class);
+        return $this->hasMany(BillBank::class)->orderByDesc('is_primary')->orderBy('id');
     }
 
     /**

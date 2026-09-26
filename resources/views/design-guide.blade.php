@@ -77,8 +77,8 @@
         <!-- Order Items List (High Density & Tactile Stepper) -->
         <div class="p-4 sm:p-5 space-y-3 bg-white">
             <div class="flex items-center justify-between text-xs font-semibold text-zinc-500 uppercase tracking-wider pb-1">
-                <span>Rincian Item Pesanan</span>
-                <span>Subtotal Porsi</span>
+                <span>Rincian Item Tagihan</span>
+                <span>Subtotal Item</span>
             </div>
 
             <!-- Item 1: Interactive Stepper -->
@@ -130,7 +130,7 @@
                 <!-- Share Breakdown -->
                 <div class="space-y-1.5 text-xs text-zinc-600 tabular-nums">
                     <div class="flex justify-between py-0.5">
-                        <span>Porsi Makanan:</span>
+                        <span>Subtotal Item:</span>
                         <span class="font-medium text-zinc-900" id="summaryPortionDisplay">Rp 56.000</span>
                     </div>
                     <div class="flex justify-between py-0.5">
@@ -162,7 +162,7 @@
                             <span>Bayar via QRIS</span>
                         </button>
                         <button type="button" class="touch-target px-3.5 py-2.5 rounded-lg bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-700 font-semibold text-xs shadow-2xs transition-colors inline-flex items-center justify-center" title="Salin Rincian">
-                            <i class="fa-regular fa-copy"></i>
+                            <i class="fa-light fa-copy"></i>
                         </button>
                     </div>
                 </div>
@@ -283,7 +283,7 @@
                 <div class="flex items-center justify-between">
                     <span class="text-xs text-zinc-500">Destructive (Hapus):</span>
                     <button type="button" class="touch-target px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold text-xs transition-colors">
-                        <i class="fa-regular fa-trash-can text-[10px] mr-1"></i> Hapus Tagihan
+                        <i class="fa-light fa-trash-can text-[10px] mr-1"></i> Hapus Tagihan
                     </button>
                 </div>
             </div>
@@ -345,7 +345,7 @@
                         </div>
                     </div>
                     <button type="button" class="copy-btn touch-target px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-zinc-300 hover:bg-zinc-100 text-zinc-700 shadow-2xs inline-flex items-center gap-1.5 active:scale-95 transition-all flex-shrink-0" data-copy="5271829011" data-label="No. Rek BCA">
-                        <i class="fa-regular fa-copy text-[11px]"></i>
+                        <i class="fa-light fa-copy text-[11px]"></i>
                         <span>Salin</span>
                     </button>
                 </div>
@@ -362,7 +362,7 @@
                         </div>
                     </div>
                     <button type="button" class="copy-btn touch-target px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-zinc-300 hover:bg-zinc-100 text-zinc-700 shadow-2xs inline-flex items-center gap-1.5 active:scale-95 transition-all flex-shrink-0" data-copy="1370019283019" data-label="No. Rek Mandiri">
-                        <i class="fa-regular fa-copy text-[11px]"></i>
+                        <i class="fa-light fa-copy text-[11px]"></i>
                         <span>Salin</span>
                     </button>
                 </div>

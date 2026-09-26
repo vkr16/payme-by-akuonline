@@ -42,11 +42,11 @@
         <div class="flex items-center justify-end gap-2 shrink-0 self-end md:self-center">
             <button type="button" onclick="openAddQrisModal()" class="tactile-btn inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-white border border-zinc-300 hover:border-emerald-700 text-zinc-800 hover:text-emerald-800 shadow-2xs transition-all cursor-pointer">
                 <i class="fa-light fa-qrcode text-emerald-700 text-sm"></i>
-                <span>+ Tambah QRIS</span>
+                <span>Tambah QRIS</span>
             </button>
             <button type="button" onclick="openAddBankModal()" class="tactile-btn inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl btn-primary shadow-xs transition-all cursor-pointer">
                 <i class="fa-light fa-plus text-xs"></i>
-                <span>+ Tambah Rekening</span>
+                <span>Tambah Rekening</span>
             </button>
         </div>
     </div>
@@ -90,7 +90,7 @@
             @if($qrisList->count() > 0)
                 <div class="space-y-3" id="qrisCardsContainer">
                     @foreach($qrisList as $qris)
-                        <div class="p-4 rounded-xl bg-zinc-50/70 hover:bg-zinc-50 border {{ $qris->is_default ? 'border-emerald-300 ring-1 ring-emerald-200/60 bg-emerald-50/20' : 'border-zinc-200/90' }} transition-all space-y-3" id="qris-card-{{ $qris->id }}">
+                        <div class="p-4 rounded-xl bg-zinc-50/70 hover:bg-zinc-50 border {{ $qris->is_default ? 'border-emerald-700 ring-1 ring-emerald-200/60 bg-emerald-50/20' : 'border-zinc-200/90' }} transition-all space-y-3" id="qris-card-{{ $qris->id }}">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="space-y-1">
                                     <div class="flex items-center gap-2 flex-wrap">
@@ -186,7 +186,7 @@
             @if($bankList->count() > 0)
                 <div class="space-y-3" id="bankCardsContainer">
                     @foreach($bankList as $bank)
-                        <div class="p-4 rounded-xl bg-zinc-50/70 hover:bg-zinc-50 border {{ $bank->is_default ? 'border-emerald-300 ring-1 ring-emerald-200/60 bg-emerald-50/20' : 'border-zinc-200/90' }} transition-all space-y-3" id="bank-card-{{ $bank->id }}">
+                        <div class="p-4 rounded-xl bg-zinc-50/70 hover:bg-zinc-50 border {{ $bank->is_default ? 'border-emerald-700 ring-1 ring-emerald-200/60 bg-emerald-50/20' : 'border-zinc-200/90' }} transition-all space-y-3" id="bank-card-{{ $bank->id }}">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="space-y-1">
                                     <div class="flex items-center gap-2 flex-wrap">

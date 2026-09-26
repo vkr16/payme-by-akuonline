@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Bill;
+use App\Models\BillBank;
 use App\Models\BillClaim;
 use App\Models\BillItem;
 use App\Models\User;
 use App\Models\UserBank;
 use App\Models\UserQris;
+use App\Services\QrisService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,6 +35,8 @@ class BillTest extends TestCase
         $response->assertSee('Scan Struk (AI)');
         $response->assertSee('Harga Satuan');
         $response->assertSee('Harga Total');
+        $response->assertSee('Panduan Format');
+        $response->assertSee('Kapan Harus Memilih Format?');
         $response->assertDontSee('id="tabManualMode"', false);
     }
 
@@ -170,6 +174,7 @@ class BillTest extends TestCase
             'bill_id' => $bill->id,
             'bank_name' => 'GoPay',
             'account_number' => '081299998888',
+            'is_primary' => true,
         ]);
         $response->assertRedirect(route('bills.show', ['slug' => $bill->slug]));
     }
@@ -189,6 +194,8 @@ class BillTest extends TestCase
         $response->assertSee('QRIS Dinamis');
         $response->assertSee('Unduh Card QR');
         $response->assertDontSee('Salin String QR');
+        $response->assertSee('AkuOnline IT Services');
+        $response->assertSee('Traktir Kopi');
     }
 
     public function test_participant_can_calculate_selection_with_proportional_fees(): void
@@ -731,5 +738,103 @@ class BillTest extends TestCase
         $this->assertEquals(25000, $freshBill->total_confirmed_tips);
         $this->assertEquals(50000, $freshBill->remaining_confirmed_amount);
         $this->assertFalse($freshBill->isFullySettled());
+    }
+
+    public function test_bill_page_provides_developer_donation_qris_information(): void
+    {
+        $qrisService = app(QrisService::class);
+        $payload = $qrisService->getDeveloperQrisPayload();
+
+        $this->assertNotEmpty($payload);
+        $this->assertTrue($qrisService->isValidQris($payload));
+
+        $merchantInfo = $qrisService->extractMerchantInfo($payload);
+        $this->assertEquals('AkuOnline IT Services', $merchantInfo['merchant_name']);
+        $this->assertEquals('KOTA TANGERANG', $merchantInfo['merchant_city']);
+
+        $bill = Bill::factory()->create();
+        $response = $this->get('/b/'.$bill->slug);
+
+        $response->assertStatus(200);
+        $response->assertDontSee('QRIS DUKUNG DEVELOPER');
+        $response->assertSee('AkuOnline IT Services');
+        $response->assertSee('postTransactionAlert');
+        $response->assertSee('btnOpenCoffeeModalFromAlert');
+        $response->assertSee('buyCoffeeModal');
+        $response->assertSee('btnDownloadCoffeeCard');
+        $response->assertSee('Traktir Kopi Mas Dev');
+    }
+
+    public function test_primary_bank_is_prioritized_with_badge_in_bill_page(): void
+    {
+        $bill = Bill::factory()->create();
+
+        // Create non-primary bank first
+        BillBank::factory()->create([
+            'bill_id' => $bill->id,
+            'bank_name' => 'Bank Mandiri',
+            'account_number' => '111222333444',
+            'is_primary' => false,
+        ]);
+
+        // Create primary bank second
+        BillBank::factory()->create([
+            'bill_id' => $bill->id,
+            'bank_name' => 'BCA Utama',
+            'account_number' => '999888777666',
+            'is_primary' => true,
+        ]);
+
+        $response = $this->get('/b/'.$bill->slug);
+
+        $response->assertStatus(200);
+        $response->assertSee('BCA Utama');
+        $response->assertSee('Utama');
+
+        // Verify order in relationship: primary bank must be first
+        $orderedBanks = $bill->fresh()->banks;
+        $this->assertEquals('BCA Utama', $orderedBanks->first()->bank_name);
+        $this->assertTrue((bool) $orderedBanks->first()->is_primary);
+    }
+
+    public function test_bill_without_qris_does_not_show_qris_option_in_claim_modal(): void
+    {
+        $bill = Bill::factory()->create([
+            'qris_payload' => null,
+            'qris_merchant_name' => null,
+        ]);
+
+        BillBank::factory()->create([
+            'bill_id' => $bill->id,
+            'bank_name' => 'BCA',
+            'is_primary' => true,
+        ]);
+
+        $response = $this->get('/b/'.$bill->slug);
+
+        $response->assertStatus(200);
+        $response->assertDontSee('<option value="qris"', false);
+        $response->assertSee('Transfer BCA');
+    }
+
+    public function test_bill_detail_has_item_search_and_collapsible_payment_details(): void
+    {
+        $bill = Bill::factory()->create();
+
+        BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'name' => 'Kopi Tubruk Spesial',
+            'qty' => 2,
+            'price' => 15000,
+        ]);
+
+        $response = $this->get('/b/'.$bill->slug);
+
+        $response->assertStatus(200);
+        $response->assertSee('menuSearchInput');
+        $response->assertSee('Cari nama item/pesanan...');
+        $response->assertSee('btnTogglePayModalDetails');
+        $response->assertSee('Lihat Rincian Item', false);
+        $response->assertSee('btnToggleClaimModalDetails');
     }
 }

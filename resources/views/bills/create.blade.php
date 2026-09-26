@@ -83,13 +83,112 @@
                         <span>Scan Struk (AI)</span>
                     </span>
 
-                    <!-- Price format selector -->
-                    <div class="flex items-center gap-1 text-[11px] text-zinc-600">
-                        <label for="receiptPriceType" class="text-zinc-500">Format:</label>
-                        <select id="receiptPriceType" name="receipt_price_type" class="bg-white border border-zinc-300 rounded-lg px-2 py-1 text-xs text-zinc-800 focus:outline-none focus:border-emerald-700 font-medium">
-                            <option value="unit_price" selected>Harga Satuan</option>
-                            <option value="total_price">Harga Total</option>
-                        </select>
+                    <!-- Price format selector & guide button -->
+                    <div class="flex items-center gap-2 text-[11px] text-zinc-600 flex-wrap">
+                        <div class="flex items-center gap-1">
+                            <label for="receiptPriceType" class="text-zinc-500 font-medium">Format Struk:</label>
+                            <select id="receiptPriceType" name="receipt_price_type" class="bg-white border border-zinc-300 rounded-lg px-2.5 py-1 text-xs text-zinc-800 focus:outline-none focus:border-emerald-700 font-medium shadow-2xs cursor-pointer">
+                                <option value="unit_price" selected>Harga Satuan</option>
+                                <option value="total_price">Harga Total</option>
+                            </select>
+                        </div>
+                        <button type="button" id="btnToggleFormatInfo" class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 hover:text-emerald-900 bg-white hover:bg-emerald-50 border border-emerald-300/80 px-2 py-1 rounded-lg shadow-2xs cursor-pointer transition-colors" title="Lihat panduan memilih format">
+                            <i class="fa-light fa-circle-question text-emerald-700"></i>
+                            <span>Panduan Format</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dynamic One-Liner Format Hint -->
+                <div id="activeFormatHint" class="text-[11px] text-emerald-900 bg-emerald-100/60 border border-emerald-200/70 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <i class="fa-light fa-circle-info text-emerald-700 shrink-0 text-xs"></i>
+                    <span id="activeFormatHintText"><strong>Format Harga Satuan:</strong> Pilih jika nominal di struk adalah harga 1 item (misal <code>2x Nasi Goreng @ 25.000</code>, tertulis 25.000). AI langsung mencatat Rp 25.000.</span>
+                </div>
+
+                <!-- Detailed Format Comparison Guide (Collapsible) -->
+                <div id="formatDetailBox" class="hidden p-3.5 rounded-xl bg-white border border-emerald-200 shadow-xs space-y-3 text-xs">
+                    <div class="flex items-center justify-between border-b border-zinc-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs">
+                                <i class="fa-light fa-book-open"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-zinc-900 text-xs">Kapan Harus Memilih Format?</h4>
+                                <p class="text-[10px] text-zinc-400">Panduan agar pembagian harga patungan per orang akurat</p>
+                            </div>
+                        </div>
+                        <button type="button" id="btnCloseFormatDetail" class="text-zinc-400 hover:text-zinc-600 p-1 text-xs cursor-pointer" title="Tutup panduan">
+                            <i class="fa-light fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Card 1: Harga Satuan -->
+                        <div class="p-3 rounded-xl border border-emerald-200/80 bg-emerald-50/30 space-y-2 flex flex-col justify-between">
+                            <div class="space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                                        1. Harga Satuan (Default)
+                                    </span>
+                                    <span class="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded uppercase">Umum</span>
+                                </div>
+                                <p class="text-[11px] text-zinc-600 leading-relaxed">
+                                    <strong class="text-emerald-950">Kapan harus memilih:</strong><br>
+                                    Pilih opsi ini jika kolom nominal harga di struk menampilkan <strong>harga per 1 unit / item</strong> barang, bukan jumlah total dari pesanan tersebut.
+                                </p>
+                            </div>
+
+                            <div class="space-y-1 pt-1">
+                                <div class="bg-white p-2 rounded-lg border border-zinc-200 text-[11px] space-y-1 font-mono text-zinc-700">
+                                    <div class="text-[9px] font-sans text-zinc-400 font-semibold uppercase">Contoh Baris di Struk:</div>
+                                    <div class="flex justify-between font-bold text-zinc-900">
+                                        <span>2x Nasi Goreng @ 25.000</span>
+                                        <span>25.000</span>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] text-emerald-800 flex items-center gap-1 pt-0.5 font-medium">
+                                    <i class="fa-light fa-check text-emerald-600"></i>
+                                    <span>AI mencatat harga satuan: <strong>Rp 25.000 / item</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Harga Total -->
+                        <div class="p-3 rounded-xl border border-blue-200/80 bg-blue-50/30 space-y-2 flex flex-col justify-between">
+                            <div class="space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-blue-950 text-xs flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                                        2. Harga Total
+                                    </span>
+                                    <span class="text-[9px] font-bold text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded uppercase">Subtotal Baris</span>
+                                </div>
+                                <p class="text-[11px] text-zinc-600 leading-relaxed">
+                                    <strong class="text-blue-950">Kapan harus memilih:</strong><br>
+                                    Pilih opsi ini jika kolom nominal harga di struk menampilkan <strong>total harga dari kuantitas tersebut</strong> (misal 2 item langsung tertulis totalnya).
+                                </p>
+                            </div>
+
+                            <div class="space-y-1 pt-1">
+                                <div class="bg-white p-2 rounded-lg border border-zinc-200 text-[11px] space-y-1 font-mono text-zinc-700">
+                                    <div class="text-[9px] font-sans text-zinc-400 font-semibold uppercase">Contoh Baris di Struk:</div>
+                                    <div class="flex justify-between font-bold text-zinc-900">
+                                        <span>2x Nasi Goreng</span>
+                                        <span>50.000</span>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] text-blue-800 flex items-center gap-1 pt-0.5 font-medium">
+                                    <i class="fa-light fa-calculator text-blue-600"></i>
+                                    <span>AI membagi: Rp 50.000 ÷ 2 = <strong>Rp 25.000 / item</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-2 rounded-lg bg-zinc-50 border border-zinc-200/80 text-[10px] text-zinc-500 flex items-start gap-1.5">
+                        <i class="fa-light fa-lightbulb text-amber-500 text-xs mt-0.5 shrink-0"></i>
+                        <span><strong>Tips Cepat:</strong> Cek baris item yang kuantitasnya lebih dari 1 (misal 2x atau 3x). Jika angka di ujung kolom adalah harga satuan per barang/item, pilih <em>Harga Satuan</em>. Jika angka di ujung kolom adalah total belanja untuk item tersebut, pilih <em>Harga Total</em>.</span>
                     </div>
                 </div>
 
@@ -115,10 +214,10 @@
             <!-- Items List Container -->
             <div class="space-y-2.5">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-zinc-700 uppercase tracking-wider">Item Pesanan</span>
+                    <span class="text-xs font-bold text-zinc-700 uppercase tracking-wider">Item Tagihan</span>
                     <button type="button" id="btnAddItem" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/60 transition-colors">
                         <i class="fa-light fa-plus text-[11px]"></i>
-                        <span>Tambah Menu</span>
+                        <span>Tambah Item</span>
                     </button>
                 </div>
 
@@ -130,7 +229,7 @@
                 <!-- Empty items placeholder -->
                 <div id="emptyItemsState" class="hidden text-center py-6 border border-dashed border-zinc-300 rounded-xl text-zinc-400 text-xs">
                     <i class="fa-light fa-cart-shopping text-xl mb-1 block text-zinc-300"></i>
-                    <span>Belum ada item pesanan. Klik <strong>Tambah Menu</strong> atau <strong>Pindai Struk</strong>.</span>
+                    <span>Belum ada item tagihan. Klik <strong>Tambah Item</strong> atau <strong>Pindai Struk</strong>.</span>
                 </div>
             </div>
 
@@ -305,12 +404,28 @@
                     <div class="space-y-2">
                         <span class="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Rekening Tersimpan di Akun</span>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            @php
+                                $hasDefault = $savedBanks->contains('is_default', true);
+                            @endphp
                             @foreach($savedBanks as $bank)
+                                @php
+                                    $shouldCheck = old('selected_bank_ids')
+                                        ? in_array($bank->id, old('selected_bank_ids', []))
+                                        : ($hasDefault ? $bank->is_default : true);
+                                @endphp
                                 <label class="flex items-start gap-2.5 p-3 rounded-xl border border-zinc-200 hover:border-emerald-600 bg-zinc-50/50 cursor-pointer transition-all has-[:checked]:border-emerald-800 has-[:checked]:bg-emerald-50/30">
-                                    <input type="checkbox" name="selected_bank_ids[]" value="{{ $bank->id }}" checked class="mt-0.5 text-emerald-800 focus:ring-emerald-700 cursor-pointer accent-emerald-800">
-                                    <div class="text-xs leading-tight">
-                                        <div class="font-bold text-zinc-900">{{ $bank->bank_name }}</div>
-                                        <div class="text-zinc-600 tabular-nums font-medium mt-0.5">{{ $bank->account_number }}</div>
+                                    <input type="checkbox" name="selected_bank_ids[]" value="{{ $bank->id }}" {{ $shouldCheck ? 'checked' : '' }} class="mt-0.5 text-emerald-800 focus:ring-emerald-700 cursor-pointer accent-emerald-800">
+                                    <div class="text-xs leading-tight flex-1">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="font-bold text-zinc-900">{{ $bank->bank_name }}</span>
+                                            @if($bank->is_default)
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                    <i class="fa-light fa-star text-[8px]"></i>
+                                                    <span>Utama</span>
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="text-zinc-600 tabular-nums font-mono font-medium mt-0.5">{{ $bank->account_number }}</div>
                                         <div class="text-[10px] text-zinc-400 mt-0.5">a.n {{ $bank->account_holder }}</div>
                                     </div>
                                 </label>
@@ -406,6 +521,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const aiLoadingIndicator = document.getElementById('aiLoadingIndicator');
     const aiLoadingText = document.getElementById('aiLoadingText');
     const aiAlert = document.getElementById('aiAlert');
+    const btnToggleFormatInfo = document.getElementById('btnToggleFormatInfo');
+    const btnCloseFormatDetail = document.getElementById('btnCloseFormatDetail');
+    const formatDetailBox = document.getElementById('formatDetailBox');
+    const activeFormatHintText = document.getElementById('activeFormatHintText');
 
     // Helper currency formatter
     function formatRupiah(number) {
@@ -629,6 +748,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (btnAddBankRow) {
         btnAddBankRow.addEventListener('click', addBankRow);
+    }
+
+    // Format Explanation & Dynamic Hint Handler
+    function updateFormatHint() {
+        if (!activeFormatHintText || !receiptPriceType) return;
+        if (receiptPriceType.value === 'total_price') {
+            activeFormatHintText.innerHTML = '<strong>Format Harga Total:</strong> Nominal di baris struk adalah total pesanan menu (misal <code>2x Nasi Goreng Rp 50.000</code>). AI otomatis membagi: <strong>Rp 50.000 ÷ 2 = Rp 25.000 / item</strong>.';
+        } else {
+            activeFormatHintText.innerHTML = '<strong>Format Harga Satuan:</strong> Nominal di baris struk adalah harga 1 item (misal <code>2x Nasi Goreng @ 25.000</code>, tertulis 25.000). AI langsung mencatat Rp 25.000.';
+        }
+    }
+
+    if (receiptPriceType) {
+        receiptPriceType.addEventListener('change', updateFormatHint);
+    }
+
+    if (btnToggleFormatInfo && formatDetailBox) {
+        btnToggleFormatInfo.addEventListener('click', function () {
+            formatDetailBox.classList.toggle('hidden');
+        });
+    }
+
+    if (btnCloseFormatDetail && formatDetailBox) {
+        btnCloseFormatDetail.addEventListener('click', function () {
+            formatDetailBox.classList.add('hidden');
+        });
     }
 
     // AI OCR Vision Handler

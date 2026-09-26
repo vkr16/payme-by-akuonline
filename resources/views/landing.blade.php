@@ -24,7 +24,7 @@
 
         <!-- Subheadline (Revised: without "tanpa bukti palsu", focused on precision & hassle-free calculation) -->
         <p class="text-sm sm:text-base text-zinc-600 leading-relaxed max-w-2xl mx-auto mb-8">
-            Foto struk untuk bagi pesanan per orang secara proporsional. Teman pilih menu sendiri, dapatkan QRIS dengan nominal pas terkunci — tanpa repot hitung manual, tanpa risiko salah transfer.
+            Foto struk untuk bagi pesanan per orang secara proporsional. Teman pilih item tagihan sendiri, dapatkan QRIS dengan nominal pas terkunci — tanpa repot hitung manual, tanpa risiko salah transfer.
         </p>        <!-- Action CTAs -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8">
             <a href="#daftar" class="touch-target w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold btn-primary shadow-xs">
@@ -70,7 +70,7 @@
                     <span class="text-xs font-semibold text-zinc-500 ml-2">Simulasi Mekanisme Memilih & Membayar Pesanan</span>
                 </div>
                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-                    <i class="fa-light fa-hand-pointer text-[10px]"></i> Coba Pilih Menu
+                    <i class="fa-light fa-hand-pointer text-[10px]"></i> Coba Pilih Item
                 </span>
             </div>
 
@@ -79,12 +79,9 @@
                 <div class="md:col-span-7 space-y-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-sm font-bold text-zinc-900">Pilih Menu Pesananmu</h2>
+                            <h2 class="text-sm font-bold text-zinc-900">Pilih Bagian Tagihanmu</h2>
                             <p class="text-xs text-zinc-500">Tentukan jumlah item yang kamu ambil dari sisa tagihan di struk</p>
                         </div>
-                        {{-- <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-                            Struk Bersama
-                        </span> --}}
                     </div>
 
                     <!-- Items from Receipt with Quantity Steppers -->
@@ -378,9 +375,9 @@
             <!-- Step 2 -->
             <div class="card-solid rounded-xl p-6 sm:p-7 relative">
                 <span class="text-2xl font-black text-emerald-800/20 mb-3 block">02</span>
-                <h3 class="text-base font-bold text-zinc-900 mb-2">Teman Pilih Menu Sendiri</h3>
+                <h3 class="text-base font-bold text-zinc-900 mb-2">Teman Pilih Bagian Sendiri</h3>
                 <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed">
-                    Bagikan tautan tagihan. Teman cukup buka link di browser HP dan mencentang menu apa saja yang mereka pesan.
+                    Bagikan tautan tagihan. Teman cukup buka link di browser HP dan memilih item atau porsi yang mereka tanggung.
                 </p>
             </div>
 

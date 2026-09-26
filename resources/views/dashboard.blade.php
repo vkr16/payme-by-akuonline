@@ -21,7 +21,7 @@
                     </span>
                 </div>
                 <p class="text-xs sm:text-sm text-zinc-500 mt-1">
-                    {{ $user->email }} &bull; Sesi tersinkronisasi aman
+                    {{ $user->email }}
                 </p>
             </div>
         </div>
@@ -175,10 +175,10 @@
                 <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-200/70 space-y-2">
                     <div class="flex items-center gap-2 font-bold text-xs sm:text-sm text-zinc-800">
                         <span class="w-5 h-5 rounded-full bg-emerald-800 text-white flex items-center justify-center text-[10px]">1</span>
-                        <span>Scan Struk atau Input Menu</span>
+                        <span>Scan Struk atau Input Item</span>
                     </div>
                     <p class="text-xs text-zinc-600 leading-relaxed">
-                        Foto struk makan atau ketik pesanan secara cepat. Sistem otomatis menghitung pembagian proporsional yang adil untuk seluruh kawan.
+                        Foto struk belanja/transaksi atau ketik rincian secara cepat. Sistem otomatis menghitung pembagian proporsional yang adil untuk seluruh teman.
                     </p>
                 </div>
 

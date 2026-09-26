@@ -180,4 +180,13 @@ class QrisService
 
         return strtoupper(str_pad(dechex($crc & 0xFFFF), 4, '0', STR_PAD_LEFT));
     }
+
+    /**
+     * Standard developer donation QRIS payload.
+     * Decoded from public/images/qris-saya.svg (AkuOnline IT Services).
+     */
+    public function getDeveloperQrisPayload(): string
+    {
+        return '00020101021126610014COM.GO-JEK.WWW01189360091431618763450210G1618763450303UMI51440014ID.CO.QRIS.WWW0215ID10253850061230303UMI5204729953033605802ID5921AkuOnline IT Services6014KOTA TANGERANG61051514762070703A016304D59A';
+    }
 }

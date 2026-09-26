@@ -25,6 +25,7 @@ class BillBankFactory extends Factory
             'bank_name' => fake()->randomElement(['BCA', 'Mandiri', 'BRI', 'BNI', 'GoPay', 'Dana', 'OVO']),
             'account_number' => fake()->numerify('##########'),
             'account_holder' => fake()->name(),
+            'is_primary' => false,
         ];
     }
 }

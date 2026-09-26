@@ -129,7 +129,7 @@
                 <span>Split Bill Lebih Adil, Bayar Pakai QRIS Lebih Praktis</span>
             </div>
             <div class="flex items-center gap-3 text-zinc-400">
-                <a href="#traktir-kopi" class="inline-flex items-center gap-1.5 text-zinc-600 hover:text-amber-700 transition-colors font-medium">
+                <a href="#traktir-kopi" data-open-buy-coffee class="inline-flex items-center gap-1.5 text-zinc-600 hover:text-amber-700 transition-colors font-medium cursor-pointer">
                     <i class="fa-light fa-mug-hot text-amber-600 text-xs"></i>
                     <span>Traktir Kopi Mas Dev</span>
                 </a>
@@ -201,6 +201,8 @@
             }
         });
     </script>
+
+    @include('partials.buy-coffee-modal')
 
     @yield('scripts')
     @stack('scripts')

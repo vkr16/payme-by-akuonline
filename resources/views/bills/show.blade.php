@@ -33,11 +33,11 @@
         <div class="p-4 rounded-2xl bg-emerald-800 text-white shadow-sm flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5 text-xs sm:text-sm">
                 <div class="w-8 h-8 rounded-lg bg-emerald-700/80 flex items-center justify-center flex-shrink-0">
-                    <i class="fa-light fa-crown text-amber-300 text-sm"></i>
+                    <i class="fa-light fa-crown text-slate-50 text-sm"></i>
                 </div>
                 <div>
                     <span class="font-bold block">Mode Host (Penagih)</span>
-                    <span class="text-[11px] text-emerald-200">Kamu adalah pembuat tagihan ini. Pantau & konfirmasi klaim pembayaran kawan di bawah.</span>
+                    <span class="text-[11px] text-slate-50">Kamu adalah pembuat tagihan ini. Pantau & konfirmasi klaim pembayaran teman di bawah.</span>
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
@@ -51,6 +51,37 @@
             </div>
         </div>
     @endif
+
+    <!-- Post-Transaction Success Alert Card (Compact) -->
+    <div id="postTransactionAlert" class="hidden mb-6 p-3.5 sm:p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200/90 shadow-2xs transition-all animate-in fade-in">
+        <div class="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-light fa-circle-check text-emerald-600 text-lg"></i>
+                </div>
+                <div class="min-w-0 space-y-0.5">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-zinc-900" id="postTxSuccessTitle">Klaim Pembayaran Dicatat! 🎉</span>
+                        <span class="inline-flex items-center text-[10px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                            Menunggu Konfirmasi
+                        </span>
+                    </div>
+                    <p class="text-xs text-zinc-600 truncate sm:whitespace-normal" id="postTxSuccessDesc">
+                        Klaim pembayaranmu telah dicatat. Suka PayMe? Yuk traktir kopi mas dev!
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0 ml-auto sm:ml-0">
+                <button type="button" id="btnOpenCoffeeModalFromAlert" class="touch-target inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer">
+                    <i class="fa-light fa-mug-hot text-slate-50"></i>
+                    <span>Traktir Kopi</span>
+                </button>
+                <button type="button" id="btnDismissPostTxAlert" class="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/50 transition-colors cursor-pointer" title="Tutup">
+                    <i class="fa-light fa-xmark text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Bill Header Card -->
     <div class="card-solid rounded-2xl p-6 sm:p-8 bg-white border border-zinc-200/90 shadow-sm text-center relative space-y-4">
@@ -117,7 +148,7 @@
 
             @php
                 $shareUrl = url('/b/' . $bill->slug);
-                $waText = urlencode("Halo kawan-kawan! Ini link patungan \"{$bill->title}\" (Total: Rp " . number_format($bill->grand_total, 0, ',', '.') . ").\nSilakan pilih menu pesananmu dan bayar via QRIS/Transfer di link ini ya:\n{$shareUrl}");
+                $waText = urlencode("Halo teman-teman! Ini link patungan \"{$bill->title}\" (Total: Rp " . number_format($bill->grand_total, 0, ',', '.') . ").\nSilakan pilih item yang kamu ambil dan bayar via QRIS/Transfer di link ini ya:\n{$shareUrl}");
             @endphp
             <a href="https://api.whatsapp.com/send?text={{ $waText }}" target="_blank" rel="noopener noreferrer" class="touch-target w-full sm:w-auto px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-xs shadow-2xs inline-flex items-center justify-center gap-2 transition-all">
                 <i class="fa-brands fa-whatsapp text-sm"></i>
@@ -133,30 +164,29 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
                 <h2 class="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-2">
-                    <i class="fa-light fa-utensils text-emerald-700"></i>
-                    <span>Pilih Menu Pesanan Kamu</span>
+                    <i class="fa-light fa-layer-group text-emerald-700"></i>
+                    <span>Pilih Bagian Tagihanmu</span>
                 </h2>
                 <p class="text-xs text-zinc-500 mt-0.5">
-                    Tentukan porsi atau makanan yang kamu pesan. Biaya tambahan & diskon dihitung secara proporsional.
+                    Tentukan item yang kamu ambil. Biaya tambahan & diskon otomatis dihitung secara proporsional.
                 </p>
             </div>
 
             <!-- Search Menu Input (Sticky/Filter via JS) -->
-            @if($bill->items->count() > 3)
             <div class="relative w-full sm:w-64 flex-shrink-0">
                 <i class="fa-light fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xs"></i>
                 <input type="text"
                        id="menuSearchInput"
-                       placeholder="Cari nama menu..."
+                       placeholder="Cari nama item/pesanan..."
                        class="w-full pl-8 pr-8 py-2 rounded-xl bg-zinc-50 border border-zinc-200 focus:bg-white focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 text-xs text-zinc-800 placeholder-zinc-400 transition-all outline-none"
                        autocomplete="off">
                 <button type="button"
                         id="btnClearMenuSearch"
-                        class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 w-5 h-5 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors">
+                        class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 w-5 h-5 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors cursor-pointer"
+                        title="Hapus pencarian">
                     <i class="fa-light fa-xmark text-xs"></i>
                 </button>
             </div>
-            @endif
         </div>
 
         <!-- Menu Items List with Stepper & Wrap Resilience -->
@@ -168,6 +198,7 @@
                 <div class="item-selection-card p-3 sm:p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 {{ $isSoldOut ? 'bg-zinc-50/60 border-zinc-200/60 opacity-60' : 'bg-white border-zinc-200/80 hover:border-emerald-600/70 shadow-2xs' }} cursor-pointer"
                      data-item-id="{{ $item->id }}"
                      data-name="{{ strtolower($item->name) }}"
+                     data-raw-name="{{ $item->name }}"
                      data-price="{{ $item->price }}"
                      data-remaining="{{ $item->remaining_qty }}"
                      data-total="{{ $item->qty }}">
@@ -185,7 +216,7 @@
                                 </span>
                             @else
                                 <span class="item-stock-badge text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/50">
-                                    sisa {{ $item->remaining_qty }}/{{ $item->qty }} porsi
+                                    sisa {{ $item->remaining_qty }}/{{ $item->qty }} item
                                 </span>
                             @endif
                             <span class="text-zinc-300 text-[10px]">&bull;</span>
@@ -217,7 +248,7 @@
         <!-- Empty search results state -->
         <div id="menuSearchEmptyState" class="hidden p-6 rounded-2xl bg-zinc-50 border border-dashed border-zinc-200 text-center text-xs text-zinc-500 space-y-1">
             <i class="fa-light fa-magnifying-glass text-zinc-400 text-xl block mb-1"></i>
-            <p class="font-medium text-zinc-700">Menu tidak ditemukan</p>
+            <p class="font-medium text-zinc-700">Item tidak ditemukan</p>
             <p class="text-zinc-400">Tidak ada item yang cocok dengan kata kunci pencarian Anda.</p>
         </div>
 
@@ -226,7 +257,7 @@
             <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Kalkulasi Bagianmu</span>
 
             <div class="flex justify-between text-zinc-600">
-                <span>Subtotal Menu Terpilih:</span>
+                <span>Subtotal Item Terpilih:</span>
                 <span id="partSubtotal" class="font-bold text-zinc-900 tabular-nums">Rp 0</span>
             </div>
 
@@ -289,9 +320,17 @@
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 @foreach($bill->banks as $bank)
-                    <div class="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between gap-3">
+                    <div class="p-3.5 rounded-xl bg-zinc-50 border {{ $bank->is_primary ? 'border-emerald-700 ring-1 ring-emerald-200/60 bg-emerald-50/20' : 'border-zinc-200/80' }} flex items-center justify-between gap-3">
                         <div class="text-xs leading-tight">
-                            <div class="font-bold text-zinc-900">{{ $bank->bank_name }}</div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-zinc-900">{{ $bank->bank_name }}</span>
+                                @if($bank->is_primary)
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        <i class="fa-light fa-star text-[8px]"></i>
+                                        <span>Utama</span>
+                                    </span>
+                                @endif
+                            </div>
                             <div class="text-zinc-700 tabular-nums font-mono font-bold mt-1 tracking-wide">{{ $bank->account_number }}</div>
                             <div class="text-[10px] text-zinc-400 mt-0.5">a.n {{ $bank->account_holder }}</div>
                         </div>
@@ -305,7 +344,7 @@
     @endif
 
     <!-- ==========================================
-         RIWAYAT PEMBAYARAN KAWAN (Unified & Clickable to Modal)
+         RIWAYAT PEMBAYARAN TEMAN (Unified & Clickable to Modal)
          ========================================== -->
     <div id="riwayat-pembayaran" class="card-solid rounded-2xl p-6 sm:p-8 bg-white border border-zinc-200/90 shadow-sm space-y-4">
         <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -315,7 +354,7 @@
                     <span>Riwayat Pembayaran (<span id="totalClaimsCount">{{ $bill->claims->count() }}</span>)</span>
                 </h2>
                 <p class="text-xs text-zinc-500 mt-0.5">
-                    Daftar kawan yang sudah konfirmasi bayar &bull; Klik kartu untuk melihat rincian & proporsi pesanan
+                    Daftar teman yang sudah konfirmasi bayar &bull; Klik kartu untuk melihat rincian pembayaran
                 </p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
@@ -402,7 +441,7 @@
                     <div class="flex items-center justify-between gap-2 pt-2 border-t border-zinc-100 text-[11px] text-zinc-500">
                         <div class="flex items-center gap-1.5">
                             <i class="fa-light fa-receipt text-zinc-400 text-[10px]"></i>
-                            <span>{{ $claim->claimItems->count() }} menu ({{ $claim->claimItems->sum('qty') }} porsi)</span>
+                            <span>{{ $claim->claimItems->count() }} jenis ({{ $claim->claimItems->sum('qty') }} item)</span>
                             <span class="text-zinc-300">&bull;</span>
                             <span>{{ $claim->created_at->diffForHumans() }}</span>
                         </div>
@@ -533,10 +572,16 @@
 
                 <div class="space-y-2 max-h-52 overflow-y-auto no-scrollbar pr-0.5">
                     @foreach($bill->banks as $bank)
-                    <div class="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between gap-2.5">
+                    <div class="p-3 rounded-xl bg-zinc-50 border {{ $bank->is_primary ? 'border-emerald-700 ring-1 ring-emerald-200/60 bg-emerald-50/20' : 'border-zinc-200/80' }} flex items-center justify-between gap-2.5">
                         <div class="text-xs leading-tight min-w-0 flex-1">
-                            <div class="font-bold text-zinc-900 flex items-center gap-1.5">
+                            <div class="font-bold text-zinc-900 flex items-center gap-1.5 flex-wrap">
                                 <span class="truncate">{{ $bank->bank_name }}</span>
+                                @if($bank->is_primary)
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        <i class="fa-light fa-star text-[8px]"></i>
+                                        <span>Utama</span>
+                                    </span>
+                                @endif
                             </div>
                             <div class="text-zinc-800 tabular-nums font-mono font-bold mt-1 tracking-wide text-xs sm:text-sm">
                                 {{ $bank->account_number }}
@@ -554,6 +599,58 @@
                 </div>
             </div>
             @endif
+
+            <!-- Collapsible: Rincian Tagihan & Biaya (Crosscheck sebelum bayar) -->
+            <div class="rounded-2xl border border-zinc-200/90 bg-zinc-50/70 overflow-hidden text-left transition-all">
+                <button type="button" id="btnTogglePayModalDetails" class="w-full p-3.5 flex items-center justify-between gap-2 text-xs font-bold text-zinc-800 hover:text-emerald-800 hover:bg-zinc-100/70 transition-colors cursor-pointer select-none">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-light fa-receipt text-emerald-700 text-sm"></i>
+                        <span>Lihat Rincian Item & Biaya</span>
+                    </span>
+                    <span class="flex items-center gap-1.5 text-zinc-400 font-medium text-[11px]">
+                        <span id="payModalItemCountBadge" class="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">0 item</span>
+                        <i class="fa-light fa-chevron-down text-xs transition-transform duration-200" id="payModalDetailsChevron"></i>
+                    </span>
+                </button>
+
+                <div id="payModalDetailsContent" class="hidden p-3.5 pt-0 space-y-3 border-t border-zinc-200/60 mt-1">
+                    <!-- Daftar Item yang Dipilih -->
+                    <div class="space-y-1.5 pt-2">
+                        <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Item yang Kamu Ambil</span>
+                        <div class="divide-y divide-zinc-200/60 max-h-36 overflow-y-auto no-scrollbar rounded-xl bg-white border border-zinc-200/70" id="payModalItemsList">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Breakdown Proporsi Biaya -->
+                    <div class="p-2.5 rounded-xl bg-white border border-zinc-200/70 space-y-1.5 text-xs">
+                        <div class="flex justify-between text-zinc-600">
+                            <span>Subtotal Item:</span>
+                            <span class="font-bold text-zinc-800 tabular-nums" id="payModalBreakdownSubtotal">Rp 0</span>
+                        </div>
+                        <div class="hidden justify-between text-zinc-600" id="payModalRowDelivery">
+                            <span>Proporsi Ongkir:</span>
+                            <span class="font-bold text-zinc-800 tabular-nums" id="payModalBreakdownDelivery">+Rp 0</span>
+                        </div>
+                        <div class="hidden justify-between text-zinc-600" id="payModalRowService">
+                            <span>Proporsi Layanan/Pajak:</span>
+                            <span class="font-bold text-zinc-800 tabular-nums" id="payModalBreakdownService">+Rp 0</span>
+                        </div>
+                        <div class="hidden justify-between text-emerald-700" id="payModalRowDiscount">
+                            <span>Proporsi Diskon:</span>
+                            <span class="font-bold text-emerald-800 tabular-nums" id="payModalBreakdownDiscount">-Rp 0</span>
+                        </div>
+                        <div class="hidden justify-between text-emerald-700" id="payModalRowRoundUp">
+                            <span>Pembulatan:</span>
+                            <span class="font-bold text-emerald-800 tabular-nums" id="payModalBreakdownRoundUp">+Rp 0</span>
+                        </div>
+                        <div class="pt-1.5 border-t border-zinc-200 flex justify-between font-black text-zinc-900 text-xs">
+                            <span>Total Tagihan Pokok:</span>
+                            <span class="text-emerald-900 tabular-nums font-black" id="payModalBreakdownTotal">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Footer Action: Direct To Claim Modal -->
@@ -597,11 +694,15 @@
                     Metode Pembayaran
                 </label>
                 <select id="claimPaymentMethod" class="touch-target w-full px-3 py-2 text-xs bg-white border border-zinc-300 rounded-xl focus:outline-none focus:border-emerald-700 text-zinc-900 font-medium">
-                    <option value="qris" selected>QRIS Dinamis</option>
-                    @foreach($bill->banks as $bank)
-                        <option value="{{ $bank->bank_name }}">Transfer {{ $bank->bank_name }}</option>
+                    @if($bill->qris_payload)
+                        <option value="qris" selected>QRIS Dinamis</option>
+                    @endif
+                    @foreach($bill->banks as $index => $bank)
+                        <option value="{{ $bank->bank_name }}" {{ (!$bill->qris_payload && ($bank->is_primary || $index === 0)) ? 'selected' : '' }}>
+                            Transfer {{ $bank->bank_name }}{{ $bank->is_primary ? ' (Utama)' : '' }}
+                        </option>
                     @endforeach
-                    <option value="cash">Tunai / Cash</option>
+                    <option value="cash" {{ (!$bill->qris_payload && $bill->banks->isEmpty()) ? 'selected' : '' }}>Tunai / Cash</option>
                 </select>
             </div>
 
@@ -612,19 +713,23 @@
                         Nominal Dibayarkan
                     </label>
                     <span id="claimMethodLockNotice" class="text-[10px] text-zinc-400 font-medium flex items-center gap-1">
-                        <i class="fa-light fa-lock text-[10px]"></i> Terkunci (QRIS)
+                        @if($bill->qris_payload)
+                            <i class="fa-light fa-lock text-[10px]"></i> Terkunci (QRIS)
+                        @else
+                            <i class="fa-light fa-pen-to-square text-[10px] text-emerald-600"></i> Bebas edit / tambah Tip
+                        @endif
                     </span>
                 </div>
 
                 <div class="relative">
                     <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">Rp</span>
-                    <input type="text" id="claimCustomAmount" readonly
-                        class="touch-target w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-zinc-100 text-zinc-600 border border-zinc-300 rounded-xl focus:outline-none text-zinc-900 font-bold tabular-nums transition-colors cursor-not-allowed"
+                    <input type="text" id="claimCustomAmount" {{ $bill->qris_payload ? 'readonly' : '' }}
+                        class="touch-target w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm {{ $bill->qris_payload ? 'bg-zinc-100 text-zinc-600 cursor-not-allowed' : 'bg-white text-zinc-900' }} border border-zinc-300 rounded-xl focus:outline-none font-bold tabular-nums transition-colors"
                         placeholder="0">
                 </div>
 
                 <!-- Quick Tip Chips (Visible only for non-QRIS) -->
-                <div id="quickTipChipsContainer" class="hidden pt-1 items-center gap-1.5 flex-wrap">
+                <div id="quickTipChipsContainer" class="{{ $bill->qris_payload ? 'hidden' : 'flex' }} pt-1 items-center gap-1.5 flex-wrap">
                     <span class="text-[10px] font-semibold text-zinc-400 mr-1">Opsi Cepat:</span>
                     <button type="button" class="btn-quick-chip px-2 py-0.5 rounded-lg bg-zinc-100 hover:bg-emerald-50 hover:text-emerald-800 text-[11px] font-semibold text-zinc-600 border border-zinc-200 cursor-pointer transition-colors" data-chip="exact">
                         Pas
@@ -641,21 +746,69 @@
                 </div>
 
                 <!-- Amount Breakdown Preview -->
-                <div class="p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs space-y-1">
-                    <div class="flex justify-between text-zinc-500">
-                        <span>Tagihan Pokok Menu:</span>
-                        <span id="claimAmountPreview" class="font-bold text-zinc-800 tabular-nums">Rp 0</span>
-                    </div>
-                    <div id="claimTipBreakdownRow" class="hidden justify-between text-emerald-700 font-semibold pt-1 border-t border-zinc-200/60">
-                        <span class="flex items-center gap-1">
-                            <i class="fa-light fa-gift text-emerald-600"></i>
-                            <span>Tip / Extra untuk Host:</span>
+                <div class="rounded-xl border border-zinc-200/90 bg-zinc-50 overflow-hidden text-left transition-all">
+                    <button type="button" id="btnToggleClaimModalDetails" class="w-full p-2.5 sm:p-3 flex items-center justify-between gap-2 text-xs font-bold text-zinc-700 hover:text-emerald-800 transition-colors cursor-pointer select-none">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-light fa-receipt text-emerald-700"></i>
+                            <span>Rincian Item & Biaya</span>
                         </span>
-                        <span id="claimTipPreview" class="tabular-nums font-bold">+Rp 0</span>
+                        <span class="flex items-center gap-1 text-[11px] text-zinc-400">
+                            <span class="font-bold tabular-nums text-zinc-800" id="claimAmountPreview">Rp 0</span>
+                            <i class="fa-light fa-chevron-down text-xs transition-transform duration-200" id="claimModalDetailsChevron"></i>
+                        </span>
+                    </button>
+
+                    <div id="claimModalDetailsContent" class="hidden p-3 pt-0 space-y-2.5 border-t border-zinc-200/70 mt-1">
+                        <!-- Claim Items List -->
+                        <div class="space-y-1 pt-1.5">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Item Kamu</span>
+                            <div class="divide-y divide-zinc-200/60 max-h-32 overflow-y-auto no-scrollbar rounded-lg bg-white border border-zinc-200/70" id="claimModalItemsList">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Cost Breakdown -->
+                        <div class="p-2.5 rounded-lg bg-white border border-zinc-200/70 space-y-1 text-xs">
+                            <div class="flex justify-between text-zinc-600">
+                                <span>Subtotal Item:</span>
+                                <span class="font-semibold text-zinc-800 tabular-nums" id="claimModalBreakdownSubtotal">Rp 0</span>
+                            </div>
+                            <div class="hidden justify-between text-zinc-600" id="claimModalRowDelivery">
+                                <span>Proporsi Ongkir:</span>
+                                <span class="font-semibold text-zinc-800 tabular-nums" id="claimModalBreakdownDelivery">+Rp 0</span>
+                            </div>
+                            <div class="hidden justify-between text-zinc-600" id="claimModalRowService">
+                                <span>Proporsi Layanan/Pajak:</span>
+                                <span class="font-semibold text-zinc-800 tabular-nums" id="claimModalBreakdownService">+Rp 0</span>
+                            </div>
+                            <div class="hidden justify-between text-emerald-700" id="claimModalRowDiscount">
+                                <span>Proporsi Diskon:</span>
+                                <span class="font-semibold text-emerald-800 tabular-nums" id="claimModalBreakdownDiscount">-Rp 0</span>
+                            </div>
+                            <div class="hidden justify-between text-emerald-700" id="claimModalRowRoundUp">
+                                <span>Pembulatan:</span>
+                                <span class="font-semibold text-emerald-800 tabular-nums" id="claimModalBreakdownRoundUp">+Rp 0</span>
+                            </div>
+                            <div class="pt-1.5 border-t border-zinc-200 flex justify-between font-bold text-zinc-900 text-xs">
+                                <span>Tagihan Pokok:</span>
+                                <span class="tabular-nums font-bold text-zinc-900" id="claimModalBreakdownTotal">Rp 0</span>
+                            </div>
+                        </div>
                     </div>
-                    <div id="claimTotalTransferRow" class="hidden justify-between text-zinc-900 font-black pt-1 border-t border-zinc-200">
-                        <span>Total Ditransfer:</span>
-                        <span id="claimTotalTransferPreview" class="tabular-nums text-emerald-900 font-black">Rp 0</span>
+
+                    <!-- Tip & Total Transfer Rows -->
+                    <div class="p-3 pt-1 border-t border-zinc-200/60 text-xs space-y-1">
+                        <div id="claimTipBreakdownRow" class="hidden justify-between text-emerald-700 font-semibold pt-1">
+                            <span class="flex items-center gap-1">
+                                <i class="fa-light fa-gift text-emerald-600"></i>
+                                <span>Tip / Extra untuk Host:</span>
+                            </span>
+                            <span id="claimTipPreview" class="tabular-nums font-bold">+Rp 0</span>
+                        </div>
+                        <div id="claimTotalTransferRow" class="hidden justify-between text-zinc-900 font-black pt-1 border-t border-zinc-200">
+                            <span>Total Ditransfer:</span>
+                            <span id="claimTotalTransferPreview" class="tabular-nums text-emerald-900 font-black">Rp 0</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -676,7 +829,7 @@
 </div>
 
 <!-- ==========================================
-     MODAL: RINCIAN PEMBAYARAN KAWAN (Claim Detail Popup)
+     MODAL: RINCIAN PEMBAYARAN TEMAN (Claim Detail Popup)
      ========================================== -->
 <div id="claimDetailModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl p-5 sm:p-7 max-w-md w-full text-left space-y-4 shadow-xl border border-zinc-200 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
@@ -686,7 +839,7 @@
                 <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold">
                     <i class="fa-light fa-receipt text-emerald-800"></i>
                 </div>
-                <h3 class="text-sm sm:text-base font-bold text-zinc-900">Rincian Pembayaran Kawan</h3>
+                <h3 class="text-sm sm:text-base font-bold text-zinc-900">Rincian Pembayaran</h3>
             </div>
             <button type="button" id="btnCloseClaimDetailModal" class="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer">
                 <i class="fa-light fa-xmark text-sm"></i>
@@ -744,7 +897,7 @@
         <!-- Menu yang Dipesan List -->
         <div class="rounded-2xl border border-zinc-200/80 overflow-hidden">
             <div class="bg-zinc-50 px-3.5 py-2 text-xs font-bold text-zinc-700 border-b border-zinc-200/80 flex justify-between items-center">
-                <span><i class="fa-light fa-utensils text-emerald-700 mr-1"></i> Menu Dipesan (<span id="detailItemCount">0</span>)</span>
+                <span><i class="fa-light fa-layer-group text-emerald-700 mr-1"></i> Item Dipilih (<span id="detailItemCount">0</span>)</span>
                 <span>Subtotal</span>
             </div>
             <div class="divide-y divide-zinc-100 max-h-40 overflow-y-auto no-scrollbar" id="detailItemsList">
@@ -758,7 +911,7 @@
                 <i class="fa-light fa-calculator text-emerald-700 mr-1"></i> Rincian Pembagian Biaya
             </span>
             <div class="flex justify-between text-zinc-600">
-                <span>Subtotal Menu Pesanan:</span>
+                <span>Subtotal Item:</span>
                 <span class="font-semibold text-zinc-900 tabular-nums" id="detailItemsSubtotal">Rp 0</span>
             </div>
             <div class="flex justify-between text-zinc-600 hidden" id="detailRowDelivery">
@@ -825,7 +978,7 @@
             </div>
             <div class="text-right flex-shrink-0">
                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70" id="itemModalStockBadge">
-                    0/0 Porsi
+                    0/0 Item
                 </span>
             </div>
         </div>
@@ -833,8 +986,8 @@
         <!-- Contributors List Container -->
         <div class="space-y-2">
             <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Kawan yang Membayar:</span>
-                <span class="text-[11px] text-zinc-500 font-medium" id="itemModalTotalClaimedSummary">Total: 0 porsi</span>
+                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Teman yang Membayar:</span>
+                <span class="text-[11px] text-zinc-500 font-medium" id="itemModalTotalClaimedSummary">Total: 0 item</span>
             </div>
 
             <div id="itemContributorsList" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
@@ -844,8 +997,8 @@
             <!-- Empty State -->
             <div id="itemContributorsEmptyState" class="hidden p-6 rounded-2xl bg-zinc-50 border border-dashed border-zinc-200 text-center text-xs text-zinc-500 space-y-1">
                 <i class="fa-light fa-clock text-zinc-300 text-2xl block mb-1"></i>
-                <p class="font-medium text-zinc-700">Belum ada yang mengklaim menu ini</p>
-                <p class="text-zinc-400">Pilih porsi kamu menggunakan tombol + di daftar menu di atas.</p>
+                <p class="font-medium text-zinc-700">Belum ada yang mengklaim item ini</p>
+                <p class="text-zinc-400">Pilih item kamu menggunakan tombol + di daftar item di atas.</p>
             </div>
         </div>
 
@@ -878,7 +1031,7 @@
         </div>
 
         <p class="text-xs text-zinc-500 leading-relaxed">
-            Centang kawan yang dananya sudah masuk ke mutasi rekeningmu. Kawan yang belum transfer dapat kamu hilangkan centangnya.
+            Centang teman yang dananya sudah masuk ke mutasi rekeningmu. Teman yang belum transfer dapat kamu hilangkan centangnya.
         </p>
 
         <!-- Select All Bar -->
@@ -932,6 +1085,7 @@
 <script src="{{ asset('vendor/qrcodejs/qrcode.min.js') }}"></script>
 <script>
 window.claimDetailsData = @json($claimsDetailData);
+window.developerQrisPayload = @json($developerQrisPayload ?? '00020101021126610014COM.GO-JEK.WWW01189360091431618763450210G1618763450303UMI51440014ID.CO.QRIS.WWW0215ID10253850061230303UMI5204729953033605802ID5921AkuOnline IT Services6014KOTA TANGERANG61051514762070703A016304D59A');
 
 document.addEventListener('DOMContentLoaded', function () {
     const slug = "{{ $bill->slug }}";
@@ -958,6 +1112,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnDownloadQrisCard = document.getElementById('btnDownloadQrisCard');
     const btnModalConfirmPaid = document.getElementById('btnModalConfirmPaid');
 
+    // Post-Transaction Developer Support Alert Elements
+    const postTransactionAlert = document.getElementById('postTransactionAlert');
+    const postTxSuccessTitle = document.getElementById('postTxSuccessTitle');
+    const postTxSuccessDesc = document.getElementById('postTxSuccessDesc');
+    const btnOpenCoffeeModalFromAlert = document.getElementById('btnOpenCoffeeModalFromAlert');
+    const btnDismissPostTxAlert = document.getElementById('btnDismissPostTxAlert');
+
     // Claim Modal
     const claimModal = document.getElementById('claimModal');
     const btnCloseClaimModal = document.getElementById('btnCloseClaimModal');
@@ -982,8 +1143,42 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnCloseClaimDetailModalBottom = document.getElementById('btnCloseClaimDetailModalBottom');
     const btnCopyClaimSummary = document.getElementById('btnCopyClaimSummary');
 
+    // Payment Modal Collapsible Details
+    const btnTogglePayModalDetails = document.getElementById('btnTogglePayModalDetails');
+    const payModalDetailsContent = document.getElementById('payModalDetailsContent');
+    const payModalDetailsChevron = document.getElementById('payModalDetailsChevron');
+    const payModalItemCountBadge = document.getElementById('payModalItemCountBadge');
+    const payModalItemsList = document.getElementById('payModalItemsList');
+    const payModalBreakdownSubtotal = document.getElementById('payModalBreakdownSubtotal');
+    const payModalRowDelivery = document.getElementById('payModalRowDelivery');
+    const payModalBreakdownDelivery = document.getElementById('payModalBreakdownDelivery');
+    const payModalRowService = document.getElementById('payModalRowService');
+    const payModalBreakdownService = document.getElementById('payModalBreakdownService');
+    const payModalRowDiscount = document.getElementById('payModalRowDiscount');
+    const payModalBreakdownDiscount = document.getElementById('payModalBreakdownDiscount');
+    const payModalRowRoundUp = document.getElementById('payModalRowRoundUp');
+    const payModalBreakdownRoundUp = document.getElementById('payModalBreakdownRoundUp');
+    const payModalBreakdownTotal = document.getElementById('payModalBreakdownTotal');
+
+    // Claim Modal Collapsible Details
+    const btnToggleClaimModalDetails = document.getElementById('btnToggleClaimModalDetails');
+    const claimModalDetailsContent = document.getElementById('claimModalDetailsContent');
+    const claimModalDetailsChevron = document.getElementById('claimModalDetailsChevron');
+    const claimModalItemsList = document.getElementById('claimModalItemsList');
+    const claimModalBreakdownSubtotal = document.getElementById('claimModalBreakdownSubtotal');
+    const claimModalRowDelivery = document.getElementById('claimModalRowDelivery');
+    const claimModalBreakdownDelivery = document.getElementById('claimModalBreakdownDelivery');
+    const claimModalRowService = document.getElementById('claimModalRowService');
+    const claimModalBreakdownService = document.getElementById('claimModalBreakdownService');
+    const claimModalRowDiscount = document.getElementById('claimModalRowDiscount');
+    const claimModalBreakdownDiscount = document.getElementById('claimModalBreakdownDiscount');
+    const claimModalRowRoundUp = document.getElementById('claimModalRowRoundUp');
+    const claimModalBreakdownRoundUp = document.getElementById('claimModalBreakdownRoundUp');
+    const claimModalBreakdownTotal = document.getElementById('claimModalBreakdownTotal');
+
     let currentCalculatedTotal = 0;
     let currentDynamicPayload = '';
+    let lastCalculatedData = null;
     let isClaimSubmitting = false;
     let activeClaimData = null;
 
@@ -1002,6 +1197,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (qty > 0) {
                     const itemId = card.getAttribute('data-item-id');
                     items[itemId] = qty;
+                }
+            }
+        });
+        return items;
+    }
+
+    // Collect currently selected items with full metadata for breakdown displays
+    function getSelectedItemsDetails() {
+        const items = [];
+        const cards = participantItemsContainer.querySelectorAll('.item-selection-card');
+        cards.forEach(card => {
+            const input = card.querySelector('.part-qty-input');
+            if (input) {
+                const qty = parseInt(input.value) || 0;
+                if (qty > 0) {
+                    const id = card.getAttribute('data-item-id');
+                    const name = card.getAttribute('data-raw-name') || card.getAttribute('data-name') || 'Item';
+                    const price = parseFloat(card.getAttribute('data-price')) || 0;
+                    items.push({
+                        id: id,
+                        name: name,
+                        qty: qty,
+                        price: price,
+                        subtotal: qty * price
+                    });
                 }
             }
         });
@@ -1078,6 +1298,7 @@ document.addEventListener('DOMContentLoaded', function () {
             partGrandTotal.textContent = 'Rp 0';
             currentCalculatedTotal = 0;
             currentDynamicPayload = '';
+            lastCalculatedData = null;
             return;
         }
 
@@ -1097,6 +1318,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = await response.json();
             if (data.success) {
+                lastCalculatedData = data;
                 currentCalculatedTotal = data.total_payable;
                 currentDynamicPayload = data.dynamic_qris_payload;
 
@@ -1276,8 +1498,97 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
+            // Populate Collapsible Payment Details
+            const selectedDetails = getSelectedItemsDetails();
+            if (payModalItemCountBadge) {
+                const totalItemCount = selectedDetails.reduce((sum, item) => sum + item.qty, 0);
+                payModalItemCountBadge.textContent = `${totalItemCount} item`;
+            }
+
+            if (payModalItemsList) {
+                payModalItemsList.innerHTML = '';
+                selectedDetails.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'px-3 py-2 flex items-center justify-between text-xs text-zinc-800';
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2 min-w-0 pr-2">
+                            <span class="font-bold text-emerald-800 tabular-nums flex-shrink-0">${item.qty}x</span>
+                            <span class="font-medium text-zinc-800 truncate">${item.name}</span>
+                        </div>
+                        <span class="tabular-nums font-semibold text-zinc-700 flex-shrink-0">${formatRupiah(item.subtotal)}</span>
+                    `;
+                    payModalItemsList.appendChild(row);
+                });
+            }
+
+            if (lastCalculatedData) {
+                if (payModalBreakdownSubtotal) payModalBreakdownSubtotal.textContent = formatRupiah(lastCalculatedData.items_subtotal);
+
+                if (payModalRowDelivery && payModalBreakdownDelivery) {
+                    if (lastCalculatedData.delivery_fee_share > 0) {
+                        payModalRowDelivery.classList.remove('hidden');
+                        payModalRowDelivery.classList.add('flex');
+                        payModalBreakdownDelivery.textContent = `+${formatRupiah(lastCalculatedData.delivery_fee_share)}`;
+                    } else {
+                        payModalRowDelivery.classList.add('hidden');
+                        payModalRowDelivery.classList.remove('flex');
+                    }
+                }
+
+                if (payModalRowService && payModalBreakdownService) {
+                    if (lastCalculatedData.service_fee_share > 0) {
+                        payModalRowService.classList.remove('hidden');
+                        payModalRowService.classList.add('flex');
+                        payModalBreakdownService.textContent = `+${formatRupiah(lastCalculatedData.service_fee_share)}`;
+                    } else {
+                        payModalRowService.classList.add('hidden');
+                        payModalRowService.classList.remove('flex');
+                    }
+                }
+
+                if (payModalRowDiscount && payModalBreakdownDiscount) {
+                    if (lastCalculatedData.discount_share > 0) {
+                        payModalRowDiscount.classList.remove('hidden');
+                        payModalRowDiscount.classList.add('flex');
+                        payModalBreakdownDiscount.textContent = `-${formatRupiah(lastCalculatedData.discount_share)}`;
+                    } else {
+                        payModalRowDiscount.classList.add('hidden');
+                        payModalRowDiscount.classList.remove('flex');
+                    }
+                }
+
+                if (payModalRowRoundUp && payModalBreakdownRoundUp) {
+                    if (lastCalculatedData.round_up_extra > 0) {
+                        payModalRowRoundUp.classList.remove('hidden');
+                        payModalRowRoundUp.classList.add('flex');
+                        payModalBreakdownRoundUp.textContent = `+${formatRupiah(lastCalculatedData.round_up_extra)}`;
+                    } else {
+                        payModalRowRoundUp.classList.add('hidden');
+                        payModalRowRoundUp.classList.remove('flex');
+                    }
+                }
+
+                if (payModalBreakdownTotal) {
+                    payModalBreakdownTotal.textContent = formatRupiah(lastCalculatedData.total_payable);
+                }
+            }
+
             if (paymentModal) {
                 paymentModal.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Toggle Collapsible Details in Payment Modal
+    if (btnTogglePayModalDetails && payModalDetailsContent) {
+        btnTogglePayModalDetails.addEventListener('click', function () {
+            const isHidden = payModalDetailsContent.classList.contains('hidden');
+            if (isHidden) {
+                payModalDetailsContent.classList.remove('hidden');
+                if (payModalDetailsChevron) payModalDetailsChevron.classList.add('rotate-180');
+            } else {
+                payModalDetailsContent.classList.add('hidden');
+                if (payModalDetailsChevron) payModalDetailsChevron.classList.remove('rotate-180');
             }
         });
     }
@@ -1413,6 +1724,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ==========================================
+    // DEVELOPER DONATION & COFFEE SUPPORT ALERT
+    // ==========================================
+    function showPostTransactionDonationAlert(payerName, amount) {
+        if (!postTransactionAlert) return;
+        if (postTxSuccessTitle && payerName) {
+            postTxSuccessTitle.textContent = `Terima kasih, ${payerName}! 🎉`;
+        }
+        if (postTxSuccessDesc && amount) {
+            postTxSuccessDesc.innerHTML = `Klaim pembayaranmu sebesar <strong>${formatRupiah(amount)}</strong> telah dicatat. <br>Suka PayMe? Yuk traktir kopi mas dev! ☕`;
+        }
+        postTransactionAlert.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (btnOpenCoffeeModalFromAlert) {
+        btnOpenCoffeeModalFromAlert.addEventListener('click', function () {
+            if (typeof window.openBuyCoffeeModal === 'function') {
+                window.openBuyCoffeeModal();
+            }
+        });
+    }
+
+    if (btnDismissPostTxAlert && postTransactionAlert) {
+        btnDismissPostTxAlert.addEventListener('click', function () {
+            postTransactionAlert.classList.add('hidden');
+        });
+    }
+
+    if (new URLSearchParams(window.location.search).has('donasi')) {
+        showPostTransactionDonationAlert('Teman', 0);
+        if (typeof window.openBuyCoffeeModal === 'function') {
+            window.openBuyCoffeeModal();
+        }
+    }
+
     // Modal Copy Bank Account Buttons
     const modalCopyAccBtns = document.querySelectorAll('.btn-copy-acc-modal');
     modalCopyAccBtns.forEach(btn => {
@@ -1515,6 +1862,76 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Populate Collapsible Claim Details
+        const selectedDetails = getSelectedItemsDetails();
+        if (claimModalItemsList) {
+            claimModalItemsList.innerHTML = '';
+            selectedDetails.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'px-3 py-1.5 flex items-center justify-between text-xs text-zinc-800';
+                row.innerHTML = `
+                    <div class="flex items-center gap-1.5 min-w-0 pr-2">
+                        <span class="font-bold text-emerald-800 tabular-nums flex-shrink-0">${item.qty}x</span>
+                        <span class="font-medium text-zinc-800 truncate">${item.name}</span>
+                    </div>
+                    <span class="tabular-nums font-semibold text-zinc-700 flex-shrink-0">${formatRupiah(item.subtotal)}</span>
+                `;
+                claimModalItemsList.appendChild(row);
+            });
+        }
+
+        if (lastCalculatedData) {
+            if (claimModalBreakdownSubtotal) claimModalBreakdownSubtotal.textContent = formatRupiah(lastCalculatedData.items_subtotal);
+
+            if (claimModalRowDelivery && claimModalBreakdownDelivery) {
+                if (lastCalculatedData.delivery_fee_share > 0) {
+                    claimModalRowDelivery.classList.remove('hidden');
+                    claimModalRowDelivery.classList.add('flex');
+                    claimModalBreakdownDelivery.textContent = `+${formatRupiah(lastCalculatedData.delivery_fee_share)}`;
+                } else {
+                    claimModalRowDelivery.classList.add('hidden');
+                    claimModalRowDelivery.classList.remove('flex');
+                }
+            }
+
+            if (claimModalRowService && claimModalBreakdownService) {
+                if (lastCalculatedData.service_fee_share > 0) {
+                    claimModalRowService.classList.remove('hidden');
+                    claimModalRowService.classList.add('flex');
+                    claimModalBreakdownService.textContent = `+${formatRupiah(lastCalculatedData.service_fee_share)}`;
+                } else {
+                    claimModalRowService.classList.add('hidden');
+                    claimModalRowService.classList.remove('flex');
+                }
+            }
+
+            if (claimModalRowDiscount && claimModalBreakdownDiscount) {
+                if (lastCalculatedData.discount_share > 0) {
+                    claimModalRowDiscount.classList.remove('hidden');
+                    claimModalRowDiscount.classList.add('flex');
+                    claimModalBreakdownDiscount.textContent = `-${formatRupiah(lastCalculatedData.discount_share)}`;
+                } else {
+                    claimModalRowDiscount.classList.add('hidden');
+                    claimModalRowDiscount.classList.remove('flex');
+                }
+            }
+
+            if (claimModalRowRoundUp && claimModalBreakdownRoundUp) {
+                if (lastCalculatedData.round_up_extra > 0) {
+                    claimModalRowRoundUp.classList.remove('hidden');
+                    claimModalRowRoundUp.classList.add('flex');
+                    claimModalBreakdownRoundUp.textContent = `+${formatRupiah(lastCalculatedData.round_up_extra)}`;
+                } else {
+                    claimModalRowRoundUp.classList.add('hidden');
+                    claimModalRowRoundUp.classList.remove('flex');
+                }
+            }
+
+            if (claimModalBreakdownTotal) {
+                claimModalBreakdownTotal.textContent = formatRupiah(lastCalculatedData.total_payable);
+            }
+        }
+
         syncClaimModalAmounts();
         if (claimModalAlert) {
             claimModalAlert.className = 'hidden';
@@ -1522,6 +1939,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         claimModal.classList.remove('hidden');
         claimPayerName.focus();
+    }
+
+    // Toggle Collapsible Details in Claim Modal
+    if (btnToggleClaimModalDetails && claimModalDetailsContent) {
+        btnToggleClaimModalDetails.addEventListener('click', function () {
+            const isHidden = claimModalDetailsContent.classList.contains('hidden');
+            if (isHidden) {
+                claimModalDetailsContent.classList.remove('hidden');
+                if (claimModalDetailsChevron) claimModalDetailsChevron.classList.add('rotate-180');
+            } else {
+                claimModalDetailsContent.classList.add('hidden');
+                if (claimModalDetailsChevron) claimModalDetailsChevron.classList.remove('rotate-180');
+            }
+        });
     }
 
     if (claimPaymentMethod) {
@@ -1623,11 +2054,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const stockBadgeEl = document.getElementById('itemModalStockBadge');
         const summaryEl = document.getElementById('itemModalTotalClaimedSummary');
 
-        if (titleEl) titleEl.textContent = 'Rincian Pembayar Menu';
+        if (titleEl) titleEl.textContent = 'Rincian Pembayar Item';
         if (itemNameEl) itemNameEl.textContent = itemName;
         if (itemPriceEl) itemPriceEl.textContent = '@ ' + formatRupiah(price);
-        if (stockBadgeEl) stockBadgeEl.textContent = `${claimed}/${total} Porsi Terklaim (Sisa ${remaining})`;
-        if (summaryEl) summaryEl.textContent = `Total: ${claimed} porsi`;
+        if (stockBadgeEl) stockBadgeEl.textContent = `${claimed}/${total} Item Terklaim (Sisa ${remaining})`;
+        if (summaryEl) summaryEl.textContent = `Total: ${claimed} item`;
 
         // Gather all contributors from window.claimDetailsData
         const claims = Object.values(window.claimDetailsData || {});
@@ -1678,7 +2109,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     </div>
                     <div class="text-right flex-shrink-0 space-y-0.5">
-                        <div class="font-bold text-zinc-900 tabular-nums">${c.qty} porsi <span class="text-zinc-400 font-normal">(${formatRupiah(c.subtotal)})</span></div>
+                        <div class="font-bold text-zinc-900 tabular-nums">${c.qty} item <span class="text-zinc-400 font-normal">(${formatRupiah(c.subtotal)})</span></div>
                         <div>${statusBadge}</div>
                     </div>
                 `;
@@ -1734,7 +2165,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 card.className = 'item-selection-card p-3 sm:p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 bg-white border-zinc-200/80 hover:border-emerald-600/70 shadow-2xs cursor-pointer';
                 if (badgeEl) {
                     badgeEl.className = 'item-stock-badge text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/50';
-                    badgeEl.innerHTML = `sisa ${remaining}/${total} porsi`;
+                    badgeEl.innerHTML = `sisa ${remaining}/${total} item`;
                 }
                 if (stepperBox) stepperBox.classList.remove('hidden');
                 if (subtotalEl) subtotalEl.classList.remove('hidden');
@@ -1842,7 +2273,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="flex items-center justify-between gap-2 pt-2 border-t border-zinc-100 text-[11px] text-zinc-500">
                 <div class="flex items-center gap-1.5">
                     <i class="fa-light fa-receipt text-zinc-400 text-[10px]"></i>
-                    <span>${claim.items_count || 1} menu (${claim.items_total_qty || 1} porsi)</span>
+                    <span>${claim.items_count || 1} jenis (${claim.items_total_qty || 1} item)</span>
                     <span class="text-zinc-300">&bull;</span>
                     <span>Baru saja</span>
                 </div>
@@ -2003,6 +2434,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 claimPaymentForm.reset();
                 if (partRoundUp) partRoundUp.checked = false;
                 resetSelection();
+
+                // 6. Notify user with post-transaction alert & optional developer donation
+                showPostTransactionDonationAlert(name, data.amount || actualAmount);
 
                 isClaimSubmitting = false;
                 btnSubmitClaim.disabled = false;
@@ -2403,7 +2837,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const selectedIds = selectedCheckboxes.map(chk => parseInt(chk.value, 10));
 
             if (selectedIds.length === 0) {
-                if (window.Notiflix) Notiflix.Notify.warning('Pilih minimal satu kawan untuk dikonfirmasi.');
+                if (window.Notiflix) Notiflix.Notify.warning('Pilih minimal satu teman untuk dikonfirmasi.');
                 return;
             }
 
@@ -2457,7 +2891,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
 
-            const confirmMsg = `Konfirmasi sekaligus pembayaran dari ${selectedIds.length} kawan sejumlah ${formatRupiah(totalSelectedAmount)}?`;
+            const confirmMsg = `Konfirmasi sekaligus pembayaran dari ${selectedIds.length} teman sejumlah ${formatRupiah(totalSelectedAmount)}?`;
             if (window.Notiflix) {
                 Notiflix.Confirm.show(
                     'Konfirmasi Sekaligus',
@@ -2541,7 +2975,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (window.Notiflix) {
             Notiflix.Confirm.show(
                 'Tolak / Hapus Klaim',
-                `Apakah Anda yakin ingin membatalkan klaim dari ${payerName}? Porsi menu akan kembali tersedia.`,
+                `Apakah Anda yakin ingin membatalkan klaim dari ${payerName}? Item akan kembali tersedia.`,
                 'Ya, Tolak',
                 'Batal',
                 executeReject
@@ -2694,12 +3128,12 @@ document.addEventListener('DOMContentLoaded', function () {
             text += `Status: ${c.status === 'confirmed' ? 'Lunas Terkonfirmasi ✅' : 'Menunggu Konfirmasi ⏳'}\n`;
             text += `Metode: ${c.payment_method.toUpperCase()}\n`;
             text += `Waktu: ${c.created_at_formatted}\n\n`;
-            text += `*Menu Dipesan:*\n`;
+            text += `*Item Dipilih:*\n`;
             c.items.forEach(i => {
                 text += `- ${i.qty}x ${i.name} (${formatRupiah(i.subtotal)})\n`;
             });
             text += `\n*Rincian Biaya:*\n`;
-            text += `Subtotal Menu: ${formatRupiah(c.items_subtotal)}\n`;
+            text += `Subtotal Item: ${formatRupiah(c.items_subtotal)}\n`;
             if (c.share_delivery > 0) text += `Proporsi Ongkir: +${formatRupiah(c.share_delivery)}\n`;
             if (c.share_service > 0) text += `Proporsi Layanan: +${formatRupiah(c.share_service)}\n`;
             if (c.share_discount > 0) text += `Proporsi Diskon: -${formatRupiah(c.share_discount)}\n`;
