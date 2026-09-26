@@ -185,7 +185,6 @@ PROMPT;
             ])->timeout(45)->post($endpoint, $payload);
 
             $responseBody = $response->body();
-            Log::info('9router raw API response: '.mb_substr($responseBody, 0, 300));
 
             if ($response->failed()) {
                 Log::error('9router API request failed with status: '.$response->status().' Body: '.$responseBody);
@@ -195,7 +194,6 @@ PROMPT;
 
             $rawText = '';
 
-            // Handle SSE (Server-Sent Events) stream chunks if 9router sends streamed data
             if (str_contains($responseBody, 'data:') || str_contains($responseBody, 'chat.completion.chunk')) {
                 $lines = explode("\n", $responseBody);
                 foreach ($lines as $line) {
@@ -216,7 +214,6 @@ PROMPT;
                     }
                 }
             } else {
-                // Handle standard single JSON response object
                 $responseData = $response->json();
                 if (isset($responseData['choices'][0]['message']['content'])) {
                     $contentObj = $responseData['choices'][0]['message']['content'];
@@ -237,12 +234,9 @@ PROMPT;
             }
 
             if (empty(trim($rawText))) {
-                Log::warning('9router rawText is empty after parsing. Full response: '.$responseBody);
-
-                return $this->emptyFallback('AI 9router mengembalikan respon kosong. Detail: '.mb_substr($responseBody, 0, 250));
+                return $this->emptyFallback('AI mengembalikan respon kosong.');
             }
 
-            // Extract JSON block using regex matching outer {...}
             $parsed = null;
             if (preg_match('/\{[\s\S]*\}/', $rawText, $matches)) {
                 $jsonCandidate = $matches[0];
@@ -250,9 +244,7 @@ PROMPT;
             }
 
             if (! is_array($parsed)) {
-                Log::warning('Failed to parse JSON from AI response text: '.$rawText);
-
-                return $this->emptyFallback('Respon AI tidak berformat JSON yang valid. Teks: '.mb_substr($rawText, 0, 150));
+                return $this->emptyFallback('Respon AI tidak berformat JSON yang valid.');
             }
 
             $rawItems = array_map(function ($item) {
@@ -268,7 +260,6 @@ PROMPT;
             $discount = (float) max(0, $parsed['discount'] ?? 0);
             $total = (float) max(0, $parsed['total'] ?? 0);
 
-            // Perform Price Format Enforcing or Auto-Crosscheck
             $processed = $this->applyPriceFormatRules($rawItems, $priceType, $deliveryFee, $serviceFee, $discount, $total);
 
             return [
@@ -284,14 +275,14 @@ PROMPT;
             ];
 
         } catch (Throwable $e) {
-            Log::error('Exception during receipt parsing: '.$e->getMessage()."\n".$e->getTraceAsString());
+            Log::error('Exception during receipt parsing: '.$e->getMessage());
 
             return $this->emptyFallback('Error: '.$e->getMessage());
         }
     }
 
     /**
-     * Apply user-defined price format rules or run mathematical crosscheck in auto mode.
+     * Apply user-defined price format rules.
      *
      * @param  array<int, array{name: string, qty: int, price: float}>  $items
      * @return array{items: array<int, array{name: string, qty: int, price: float}>, auto_corrected: bool, auto_corrected_message: string}
@@ -307,27 +298,51 @@ PROMPT;
         }
 
         if ($priceType === 'total_price') {
-            // User selected Total Price mode (Harga Struk = Harga Total Item): Divide line total by qty
-            $corrected = [];
-            $wasAdjusted = false;
-            foreach ($items as $item) {
-                if ($item['qty'] > 1) {
-                    $unitPrice = round($item['price'] / $item['qty']);
-                    $corrected[] = array_merge($item, ['price' => $unitPrice]);
-                    $wasAdjusted = true;
-                } else {
-                    $corrected[] = $item;
+            $expectedSubtotal = $total > 0 ? max(0, $total - $deliveryFee - $serviceFee + $discount) : 0;
+
+            if ($expectedSubtotal > 0) {
+                $sumAsUnitPrice = 0.0;
+                $sumAsLineTotal = 0.0;
+                $hasMultiQty = false;
+
+                foreach ($items as $item) {
+                    $qty = max(1, $item['qty']);
+                    if ($qty > 1) {
+                        $hasMultiQty = true;
+                    }
+                    $sumAsUnitPrice += $item['price'] * $qty;
+                    $sumAsLineTotal += $item['price'];
+                }
+
+                // If sum of (price * qty) aligns better with expected subtotal than sum of (price),
+                // the AI model has already divided the line total into unit price as requested in the prompt.
+                // Only divide in PHP if the AI model did not divide (sumAsLineTotal matches expected subtotal).
+                if ($hasMultiQty && abs($sumAsLineTotal - $expectedSubtotal) < abs($sumAsUnitPrice - $expectedSubtotal)) {
+                    $corrected = [];
+                    foreach ($items as $item) {
+                        if ($item['qty'] > 1) {
+                            $unitPrice = round($item['price'] / $item['qty']);
+                            $corrected[] = array_merge($item, ['price' => $unitPrice]);
+                        } else {
+                            $corrected[] = $item;
+                        }
+                    }
+
+                    return [
+                        'items' => $corrected,
+                        'auto_corrected' => true,
+                        'auto_corrected_message' => 'Format diterapkan (Harga Struk = Harga Total): Nominal baris item dibagi dengan quantity untuk menghasilkan harga satuan.',
+                    ];
                 }
             }
 
             return [
-                'items' => $corrected,
-                'auto_corrected' => $wasAdjusted,
-                'auto_corrected_message' => 'Format diterapkan (Harga Struk = Harga Total Item): Nominal baris item secara otomatis dibagi dengan jumlah kuantitas untuk menghasilkan harga satuan.',
+                'items' => $items,
+                'auto_corrected' => false,
+                'auto_corrected_message' => '',
             ];
         }
 
-        // Default (Harga Struk = Harga Satuan): Keep unit prices as-is
         return [
             'items' => $items,
             'auto_corrected' => false,
