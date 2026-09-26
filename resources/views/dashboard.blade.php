@@ -101,7 +101,7 @@
                     <i class="fa-light fa-clock-rotate-left text-emerald-700"></i>
                     <span>Tagihan Patungan Kamu</span>
                 </h2>
-                <div class="text-xs font-semibold text-zinc-500">
+                <div class="text-xs font-semibold text-zinc-500 hidden md:block">
                     <span class="text-emerald-800 font-bold">{{ $settledBillsCount }} Selesai</span>
                     <span class="text-zinc-300 mx-1">&bull;</span>
                     <span>{{ $totalBills - $settledBillsCount }} Berlangsung</span>
