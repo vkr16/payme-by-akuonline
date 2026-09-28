@@ -69,7 +69,7 @@ class AuthController extends Controller
             $request->session()->forget('url.intended');
         }
 
-        return redirect()->intended(route('dashboard'))->with('success', 'Selamat datang kembali, '.$user->name.'!');
+        return redirect()->intended(route('dashboard', absolute: true))->with('success', 'Selamat datang kembali, ' . $user->name . '!');
     }
 
     /**
@@ -149,6 +149,6 @@ class AuthController extends Controller
      */
     protected function throttleKey(Request $request): string
     {
-        return Str::transliterate(Str::lower($request->string('email')).'|'.$request->ip());
+        return Str::transliterate(Str::lower($request->string('email')) . '|' . $request->ip());
     }
 }
