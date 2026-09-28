@@ -800,6 +800,7 @@
                         </div>
                     </div>
                 </div>
+            </div>{{-- closes space-y-1.5 (nominal section) --}}
 
             <div id="claimModalAlert" class="hidden p-2.5 rounded-lg text-xs font-medium"></div>
 
