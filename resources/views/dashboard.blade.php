@@ -155,10 +155,15 @@
                                     Rp {{ number_format($bill->grand_total, 0, ',', '.') }}
                                 </div>
                             </div>
-                            <a href="{{ route('bills.show', ['slug' => $bill->slug]) }}" class="touch-target px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-emerald-50 text-zinc-700 hover:text-emerald-800 font-semibold text-xs border border-zinc-200 transition-colors inline-flex items-center gap-1.5">
-                                <span>Detail</span>
-                                <i class="fa-light fa-arrow-right text-[10px]"></i>
-                            </a>
+                            <div class="flex items-center gap-1.5">
+                                <a href="{{ route('bills.show', ['slug' => $bill->slug]) }}" class="touch-target px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-emerald-50 text-zinc-700 hover:text-emerald-800 font-semibold text-xs border border-zinc-200 transition-colors inline-flex items-center gap-1.5">
+                                    <span>Detail</span>
+                                    <i class="fa-light fa-arrow-right text-[10px]"></i>
+                                </a>
+                                <button type="button" onclick="deleteBill({{ $bill->id }}, '{{ addslashes($bill->title) }}')" class="btn-delete-bill touch-target w-8 h-8 rounded-lg bg-zinc-100 hover:bg-rose-50 text-zinc-400 hover:text-rose-600 border border-zinc-200 hover:border-rose-200 transition-colors inline-flex items-center justify-center cursor-pointer" title="Hapus Tagihan">
+                                    <i class="fa-light fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 @endforeach
@@ -197,3 +202,73 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    window.deleteBill = function (id, title) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) return;
+
+        const executeDelete = async function () {
+            if (window.Notiflix) {
+                Notiflix.Loading.pulse('Menghapus tagihan...');
+            }
+            try {
+                const res = await fetch(`/bills/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+
+                const data = await res.json();
+                if (window.Notiflix) {
+                    Notiflix.Loading.remove();
+                }
+
+                if (res.ok && data.success) {
+                    if (window.Notiflix) {
+                        Notiflix.Notify.success(data.message);
+                    }
+                    setTimeout(() => window.location.reload(), 500);
+                } else {
+                    if (window.Notiflix) {
+                        Notiflix.Notify.failure(data.message || 'Gagal menghapus tagihan.');
+                    } else {
+                        alert(data.message || 'Gagal menghapus tagihan.');
+                    }
+                }
+            } catch (err) {
+                if (window.Notiflix) {
+                    Notiflix.Loading.remove();
+                    Notiflix.Notify.failure('Terjadi kesalahan jaringan.');
+                } else {
+                    alert('Terjadi kesalahan jaringan.');
+                }
+            }
+        };
+
+        if (window.Notiflix) {
+            Notiflix.Confirm.show(
+                'Hapus Tagihan Patungan?',
+                `Apakah Anda yakin ingin menghapus tagihan "${title}"? Seluruh data menu dan riwayat klaim pembayaran pada tagihan ini akan dihapus permanen.`,
+                'Ya, Hapus Tagihan',
+                'Batal',
+                executeDelete,
+                function () {},
+                {
+                    okButtonBackground: '#E11D48',
+                    titleColor: '#9F1239',
+                    messageMaxLength: 800
+                }
+            );
+        } else {
+            if (confirm(`Apakah Anda yakin ingin menghapus tagihan "${title}"? Seluruh data menu dan riwayat klaim pembayaran pada tagihan ini akan dihapus permanen.`)) {
+                executeDelete();
+            }
+        }
+    };
+</script>
+@endpush

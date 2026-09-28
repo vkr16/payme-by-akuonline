@@ -40,7 +40,7 @@
                     <span class="text-[11px] text-slate-50">Kamu adalah pembuat tagihan ini. Pantau & konfirmasi klaim pembayaran teman di bawah.</span>
                 </div>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
                 <button type="button" id="btnHostBannerBatchConfirm" class="{{ $pendingCount > 0 ? 'flex' : 'hidden' }} px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold text-xs transition-colors items-center gap-1.5 shadow-2xs cursor-pointer" style="{{ $pendingCount > 0 ? '' : 'display: none !important;' }}" title="Konfirmasi sekaligus klaim yang menunggu">
                     <i class="fa-light fa-check-double text-xs"></i>
                     <span><span id="bannerPendingCount">{{ $pendingCount }}</span> Menunggu</span>
@@ -48,6 +48,10 @@
                 <a href="{{ route('dashboard') }}" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs transition-colors">
                     Dashboard
                 </a>
+                <button type="button" onclick="deleteCurrentBill({{ $bill->id }}, '{{ addslashes($bill->title) }}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-rose-600 text-white font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer" title="Hapus Tagihan Ini">
+                    <i class="fa-light fa-trash-can text-xs"></i>
+                    <span class="hidden sm:inline">Hapus</span>
+                </button>
             </div>
         </div>
     @endif
@@ -2969,6 +2973,75 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-reject-claim').forEach(btn => {
         btn.addEventListener('click', handleRejectClaimClick);
     });
+
+    // ==========================================
+    // DELETE CURRENT BILL (Host Action)
+    // ==========================================
+    window.deleteCurrentBill = function (id, title) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) return;
+
+        const executeDelete = async function () {
+            if (window.Notiflix) {
+                Notiflix.Loading.pulse('Menghapus tagihan...');
+            }
+            try {
+                const res = await fetch(`/bills/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+
+                const data = await res.json();
+                if (window.Notiflix) {
+                    Notiflix.Loading.remove();
+                }
+
+                if (res.ok && data.success) {
+                    if (window.Notiflix) {
+                        Notiflix.Notify.success(data.message);
+                    }
+                    window.location.href = data.redirect_url || '{{ route("dashboard") }}';
+                } else {
+                    if (window.Notiflix) {
+                        Notiflix.Notify.failure(data.message || 'Gagal menghapus tagihan.');
+                    } else {
+                        alert(data.message || 'Gagal menghapus tagihan.');
+                    }
+                }
+            } catch (err) {
+                if (window.Notiflix) {
+                    Notiflix.Loading.remove();
+                    Notiflix.Notify.failure('Terjadi kesalahan jaringan.');
+                } else {
+                    alert('Terjadi kesalahan jaringan.');
+                }
+            }
+        };
+
+        if (window.Notiflix) {
+            Notiflix.Confirm.show(
+                'Hapus Tagihan Patungan?',
+                `Apakah Anda yakin ingin menghapus tagihan "${title}"? Seluruh data menu dan riwayat klaim pembayaran pada tagihan ini akan dihapus permanen.`,
+                'Ya, Hapus Tagihan',
+                'Batal',
+                executeDelete,
+                function () {},
+                {
+                    okButtonBackground: '#E11D48',
+                    titleColor: '#9F1239',
+                    messageMaxLength: 800
+                }
+            );
+        } else {
+            if (confirm(`Apakah Anda yakin ingin menghapus tagihan "${title}"? Seluruh data menu dan riwayat klaim pembayaran pada tagihan ini akan dihapus permanen.`)) {
+                executeDelete();
+            }
+        }
+    };
 
     // ==========================================
     // CLAIM DETAIL MODAL POPUP HANDLERS

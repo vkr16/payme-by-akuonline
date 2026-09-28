@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/bills/create', [BillController::class, 'create'])->name('bills.create');
     Route::post('/bills', [BillController::class, 'store'])->name('bills.store');
     Route::post('/bills/parse-receipt', [BillController::class, 'parseReceipt'])->name('bills.parse_receipt');
+    Route::delete('/bills/{id}', [BillController::class, 'destroy'])->name('bills.destroy');
 
     // Host Approval / Confirmation for Claims
     Route::post('/b/{slug}/claims/batch-confirm', [BillController::class, 'batchConfirmClaims'])->name('bills.claims.batch_confirm');

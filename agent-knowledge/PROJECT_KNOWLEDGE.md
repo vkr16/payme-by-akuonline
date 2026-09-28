@@ -88,6 +88,7 @@ $$\text{Total Akhir Dibayar} = \text{Subtotal Item Pengguna} + \text{Biaya Tamba
 | `GET /dashboard` | `dashboard` | `resources/views/dashboard.blade.php` | Dashboard Host (Penagih): Ringkasan tagihan, klaim menunggu, profil rekening/QRIS, dan onboarding panduan host. |
 | `GET /bills/create` | `bills.create` | `resources/views/bills/create.blade.php` | Form Buat Patungan: Header ringkas (nama acara), AI receipt OCR dropzone, input manual tactile stepper, manajemen QRIS & rekening DB, live fee & discount calculations, sticky floating bottom bar. |
 | `POST /bills` | `bills.store` | Controller Action | Validasi data patungan, parsing & pembuatan bill, penyimpanan item, snapshot bank & QRIS, auto-save profile rekening. |
+| `DELETE /bills/{id}` | `bills.destroy` | Controller Action | Penghapusan tagihan patungan beserta relasi items, banks, dan claims (cascade), serta pembersihan file fisik. |
 | `POST /bills/parse-receipt` | `bills.parse_receipt` | Controller Action | Endpoint OCR NineRouter AI Vision untuk ekstraksi item struk belanja secara otomatis. |
 | `GET /b/{slug}` | `bills.show` | `resources/views/bills/show.blade.php` | Halaman Pembayaran Patungan: Pemilihan menu pesanan interaktif (stepper kuantitas), kalkulasi proporsional real-time, generate Dynamic QRIS nominal terkunci, modal klaim "Saya Sudah Bayar", dan khusus Host: antarmuka verifikasi & approval klaim kawan (Anti-Fake Claim). |
 | `POST /b/{slug}/calculate` | `bills.calculate` | Controller Action | AJAX endpoint kalkulasi proporsional subtotal item, alokasi ongkir/layanan/diskon, dan generate payload dynamic QRIS. |
@@ -120,18 +121,19 @@ $$\text{Total Akhir Dibayar} = \text{Subtotal Item Pengguna} + \text{Biaya Tamba
      - Web App Manifest: [manifest.webmanifest](file:///home/fikri/Development/payme/public/manifest.webmanifest) (Nama, icon maskable/any 192px & 512px, start_url: `/dashboard`, display: `standalone`, app shortcuts).
      - Service Worker: [sw.js](file:///home/fikri/Development/payme/public/sw.js) (Pre-cache shell assets, FontAwesome lokal, icons; Network-first untuk halaman dinamis).
      - Auto-registration di [app.js](file:///home/fikri/Development/payme/resources/js/app.js) dan link manifest di [app.blade.php](file:///home/fikri/Development/payme/resources/views/layouts/app.blade.php).
-6. **Halaman "Buat Patungan" (Tactile, Focused & Database-Backed):**
+6. **Halaman "Buat Patungan" & Manajemen Tagihan (Tactile, Focused & Database-Backed):**
    - **Database Models & Migrations:** `UserQris`, `UserBank`, `Bill`, `BillItem`, `BillBank`.
    - **Services:** [QrisService.php](file:///home/fikri/Development/payme/app/Services/QrisService.php) (EMVCo parser & dynamic QRIS generator) dan [ReceiptParserService.php](file:///home/fikri/Development/payme/app/Services/ReceiptParserService.php) (NineRouter Gemini Vision parser).
-   - **Controller:** [BillController.php](file:///home/fikri/Development/payme/app/Http/Controllers/BillController.php) (`create`, `store`, `parseReceipt`, `show`).
+   - **Controller:** [BillController.php](file:///home/fikri/Development/payme/app/Http/Controllers/BillController.php) (`create`, `store`, `destroy`, `parseReceipt`, `show`).
    - **Views:** [create.blade.php](file:///home/fikri/Development/payme/resources/views/bills/create.blade.php) (Dilengkapi modal popup konfirmasi cek ulang pra-submit dengan peringatan potensi kekeliruan AI scan struk, live preview snapshot tagihan, validasi browser HTML5, serta indikator loading feedback).
+   - **Fitur Hapus Tagihan (Bill Deletion):** Tersedia opsi hapus dengan modal konfirmasi protektif di Dashboard host ([dashboard.blade.php](file:///home/fikri/Development/payme/resources/views/dashboard.blade.php)) maupun langsung di halaman rincian tagihan ([show.blade.php](file:///home/fikri/Development/payme/resources/views/bills/show.blade.php)).
 7. **Halaman Pembayaran & Mekanisme Approval Host (Anti-Fake Claim):**
    - **Database Models & Migrations:** `BillClaim` & `BillClaimItem` dengan tracking status `pending` dan `confirmed`.
    - **Interaktif Pemilihan Menu:** Stepper kuantitas porsi pesanan dengan live calculation AJAX proporsionalitas ongkir/layanan/diskon.
    - **Dynamic QRIS Modal:** Menghasilkan QR code SVG/canvas ber-nominal terkunci pas sesuai porsi yang dipilih partisipan.
    - **Klaim Pembayaran ("Saya Sudah Bayar"):** Form modal input nama & metode bayar yang mencatat klaim ke database.
    - **Host Claims Management:** Khusus user dengan sesi Host, muncul card approval untuk memverifikasi dana masuk ("Konfirmasi Dana Masuk" / "Tolak Klaim").
-   - **Automated Tests:** [BillTest.php](file:///home/fikri/Development/payme/tests/Feature/BillTest.php) (23 passed tests, total suite: 46 passed tests).
+   - **Automated Tests:** [BillTest.php](file:///home/fikri/Development/payme/tests/Feature/BillTest.php) (28 passed tests, total suite: 51 passed tests).
 
 ### 🚀 Roadmap Selanjutnya (Upcoming Work):
 1. **Post-Payment "Buy Me a Coffee" Prompt:**

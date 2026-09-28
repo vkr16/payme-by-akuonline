@@ -841,4 +841,80 @@ class BillTest extends TestCase
         $response->assertSee('Lihat Rincian Item', false);
         $response->assertSee('btnToggleClaimModalDetails');
     }
+
+    public function test_guest_cannot_delete_bill(): void
+    {
+        $bill = Bill::factory()->create();
+
+        $response = $this->delete('/bills/'.$bill->id);
+
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseHas('bills', ['id' => $bill->id]);
+    }
+
+    public function test_user_cannot_delete_another_users_bill(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $bill = Bill::factory()->create(['user_id' => $owner->id]);
+
+        $response = $this->actingAs($otherUser)->delete('/bills/'.$bill->id);
+
+        $response->assertStatus(404);
+        $this->assertDatabaseHas('bills', ['id' => $bill->id]);
+    }
+
+    public function test_user_can_delete_own_bill_and_cascades_all_relations(): void
+    {
+        $user = User::factory()->create();
+        $bill = Bill::factory()->create(['user_id' => $user->id, 'title' => 'Makan Bareng Divisi']);
+
+        $item = BillItem::factory()->create(['bill_id' => $bill->id, 'name' => 'Sate Ayam']);
+        $bank = BillBank::factory()->create(['bill_id' => $bill->id, 'bank_name' => 'BCA']);
+        $claim = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Doni',
+            'amount' => 20000,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user)->delete('/bills/'.$bill->id);
+
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('bills', ['id' => $bill->id]);
+        $this->assertDatabaseMissing('bill_items', ['id' => $item->id]);
+        $this->assertDatabaseMissing('bill_banks', ['id' => $bank->id]);
+        $this->assertDatabaseMissing('bill_claims', ['id' => $claim->id]);
+    }
+
+    public function test_user_can_delete_bill_via_json(): void
+    {
+        $user = User::factory()->create();
+        $bill = Bill::factory()->create(['user_id' => $user->id, 'title' => 'Ngopi Santai']);
+
+        $response = $this->actingAs($user)->deleteJson('/bills/'.$bill->id);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'redirect_url' => route('dashboard'),
+        ]);
+
+        $this->assertDatabaseMissing('bills', ['id' => $bill->id]);
+    }
+
+    public function test_dashboard_displays_delete_bill_button(): void
+    {
+        $user = User::factory()->create();
+        $bill = Bill::factory()->create(['user_id' => $user->id, 'title' => 'Makan Siang Bareng']);
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertSee('btn-delete-bill');
+        $response->assertSee('deleteBill('.$bill->id, false);
+    }
 }

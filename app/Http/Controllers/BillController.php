@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -588,5 +589,34 @@ class BillController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Delete an existing bill and its associated items and claims.
+     */
+    public function destroy(Request $request, int|string $id): RedirectResponse|JsonResponse
+    {
+        $user = Auth::user();
+        $bill = $user->bills()->where('id', $id)->orWhere('slug', $id)->firstOrFail();
+        $billTitle = $bill->title;
+
+        // Clean up stored receipt image if exists
+        if ($bill->receipt_image_path && Storage::disk('public')->exists($bill->receipt_image_path)) {
+            Storage::disk('public')->delete($bill->receipt_image_path);
+        }
+
+        $bill->delete();
+
+        $message = "Tagihan patungan \"{$billTitle}\" berhasil dihapus.";
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'redirect_url' => route('dashboard'),
+            ]);
+        }
+
+        return redirect()->route('dashboard')->with('success', $message);
     }
 }

@@ -36,6 +36,17 @@
     <!-- Tailwind CSS v4 & Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <style>
+        [id^=NotiflixReportWrap] > div[class*="-content"] {
+            max-height: 88vh !important;
+            overflow-y: auto !important;
+        }
+        [id^=NotiflixReportWrap] > div[class*="-content"] > p {
+            white-space: pre-line;
+            word-break: break-word;
+        }
+    </style>
+
     @yield('styles')
     @stack('styles')
 </head>
@@ -179,6 +190,62 @@
                 cancelButtonBackground: '#F4F4F5',
                 cancelButtonColor: '#3F3F46',
                 fontFamily: 'inherit',
+            });
+
+            Notiflix.Report.init({
+                className: 'notiflix-report',
+                width: '440px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '16px',
+                rtl: false,
+                zindex: 4002,
+                backOverlay: true,
+                backOverlayColor: 'rgba(0,0,0,0.5)',
+                backOverlayClickToClose: false,
+                fontFamily: 'inherit',
+                svgSize: '80px',
+                plainText: false,
+                titleFontSize: '16px',
+                titleMaxLength: 255,
+                messageFontSize: '13px',
+                messageMaxLength: 50000,
+                buttonFontSize: '14px',
+                buttonMaxLength: 64,
+                cssAnimation: true,
+                cssAnimationDuration: 360,
+                cssAnimationStyle: 'fade',
+                success: {
+                    svgColor: '#064E3B',
+                    titleColor: '#064E3B',
+                    messageColor: '#27272A',
+                    buttonBackground: '#064E3B',
+                    buttonColor: '#FFFFFF',
+                    backOverlayColor: 'rgba(6,78,59,0.2)',
+                },
+                failure: {
+                    svgColor: '#E11D48',
+                    titleColor: '#9F1239',
+                    messageColor: '#27272A',
+                    buttonBackground: '#E11D48',
+                    buttonColor: '#FFFFFF',
+                    backOverlayColor: 'rgba(225,29,72,0.2)',
+                },
+                warning: {
+                    svgColor: '#D97706',
+                    titleColor: '#92400E',
+                    messageColor: '#27272A',
+                    buttonBackground: '#D97706',
+                    buttonColor: '#FFFFFF',
+                    backOverlayColor: 'rgba(217,119,6,0.2)',
+                },
+                info: {
+                    svgColor: '#0284C7',
+                    titleColor: '#075985',
+                    messageColor: '#27272A',
+                    buttonBackground: '#0284C7',
+                    buttonColor: '#FFFFFF',
+                    backOverlayColor: 'rgba(2,132,199,0.2)',
+                },
             });
         }
 
