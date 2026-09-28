@@ -69,7 +69,7 @@ class AuthController extends Controller
             $request->session()->forget('url.intended');
         }
 
-        return redirect()->intended(route('dashboard', absolute: true))->with('success', 'Selamat datang kembali, '.$user->name.'!');
+        return redirect()->to(route('dashboard', absolute: true))->with('success', 'Selamat datang kembali, '.$user->name.'!');
     }
 
     /**
