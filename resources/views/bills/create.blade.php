@@ -28,7 +28,7 @@
     </div>
 
     <!-- Main Form -->
-    <form action="{{ route('bills.store') }}" method="POST" enctype="multipart/form-data" id="createBillForm" class="space-y-5">
+    <form action="{{ route('bills.store') }}" method="POST" enctype="multipart/form-data" id="createBillForm" data-manual-loading="true" class="space-y-5">
         @csrf
 
         <!-- ==========================================
@@ -72,7 +72,7 @@
                 <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60 flex items-center justify-center text-xs font-bold shadow-2xs">
                     2
                 </span>
-                <h2 class="text-sm sm:text-base font-bold text-zinc-900">Daftar Menu & Biaya</h2>
+                <h2 class="text-sm sm:text-base font-bold text-zinc-900">Daftar Pesanan & Biaya</h2>
             </div>
 
             <!-- AI OCR Dropzone Area -->
@@ -464,7 +464,7 @@
                     </div>
                 </div>
 
-                <button type="submit" id="btnSubmitBill" class="touch-target px-5 sm:px-6 py-2.5 rounded-xl btn-primary font-bold text-xs sm:text-sm shadow-md inline-flex items-center gap-2 transition-all">
+                <button type="button" id="btnSubmitBill" class="touch-target px-5 sm:px-6 py-2.5 rounded-xl btn-primary font-bold text-xs sm:text-sm shadow-md inline-flex items-center gap-2 transition-all cursor-pointer">
                     <span>Buat Link Patungan</span>
                     <i class="fa-light fa-arrow-right text-xs"></i>
                 </button>
@@ -472,6 +472,104 @@
         </div>
 
     </form>
+</div>
+
+<!-- ==========================================
+     MODAL: KONFIRMASI & PERIKSA ULANG TAGIHAN
+     ========================================== -->
+<div id="confirmSubmitModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="confirmSubmitModalTitle">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-zinc-200 relative animate-in fade-in zoom-in-95 duration-200 max-h-[88vh] flex flex-col overflow-hidden my-auto">
+        <!-- Modal Header (Fixed at top) -->
+        <div class="p-5 sm:p-6 pb-3 border-b border-zinc-100 shrink-0 relative text-center space-y-1.5">
+            <!-- Close Button -->
+            <button type="button" id="btnCloseConfirmModal" class="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer" aria-label="Tutup konfirmasi">
+                <i class="fa-light fa-xmark text-sm"></i>
+            </button>
+
+            {{-- <div class="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/80 shadow-2xs mb-0.5">
+                <i class="fa-light fa-clipboard-check text-xl"></i>
+            </div> --}}
+            <h3 id="confirmSubmitModalTitle" class="text-base sm:text-lg font-bold text-zinc-900">
+                Konfirmasi & Cek Ulang Tagihan
+            </h3>
+            <p class="text-xs text-zinc-500 leading-relaxed px-2">
+                Harap luangkan waktu sejenak untuk meninjau rincian patungan sebelum link dibagikan ke teman-temanmu.
+            </p>
+        </div>
+
+        <!-- Modal Body (Scrollable with touch-action) -->
+        <div class="p-5 sm:p-6 pt-3 pb-3 overflow-y-auto flex-1 min-h-0 space-y-3.5 overscroll-contain" style="-webkit-overflow-scrolling: touch; touch-action: pan-y;">
+            <!-- AI Disclaimer & Warning Box -->
+            <div class="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/90 space-y-2.5 text-left">
+                <div class="flex items-start gap-2.5">
+                    <div class="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-light fa-triangle-exclamation text-xs"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="text-xs font-bold text-amber-950">Peringatan: Periksa Hasil Pindai AI</h4>
+                        <p class="text-[11px] text-amber-900/90 leading-relaxed">
+                            Jika kamu menggunakan fitur Scan Struk, perlu diingat bahwa <strong>AI sangat mungkin melakukan kesalahan</strong> dalam mengenali nominal harga, kuantitas, atau teks nama pesanan.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bill Snapshot Box -->
+            <div class="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/90 space-y-2 text-xs">
+                <div class="flex items-center justify-between border-b border-zinc-200/70 pb-2">
+                    <span class="text-zinc-500 font-medium">Nama Acara:</span>
+                    <span id="confirmModalEventTitle" class="font-bold text-zinc-900 truncate max-w-[210px] text-right">-</span>
+                </div>
+
+                <div class="flex items-center justify-between text-zinc-600">
+                    <span>Daftar Pesanan:</span>
+                    <span id="confirmModalItemCount" class="font-semibold text-zinc-800 tabular-nums">0 pesanan</span>
+                </div>
+
+                <div class="flex items-center justify-between text-zinc-600">
+                    <span>Subtotal Item:</span>
+                    <span id="confirmModalSubtotal" class="font-semibold text-zinc-800 tabular-nums">Rp 0</span>
+                </div>
+
+                <div id="confirmModalDeliveryRow" class="flex items-center justify-between text-zinc-600 hidden">
+                    <span>Ongkos Kirim:</span>
+                    <span id="confirmModalDelivery" class="font-medium text-zinc-900 tabular-nums">Rp 0</span>
+                </div>
+
+                <div id="confirmModalServiceRow" class="flex items-center justify-between text-zinc-600 hidden">
+                    <span>Biaya Layanan:</span>
+                    <span id="confirmModalService" class="font-medium text-zinc-900 tabular-nums">Rp 0</span>
+                </div>
+
+                <div id="confirmModalDiscountRow" class="flex items-center justify-between text-emerald-700 hidden">
+                    <span>Potongan Diskon:</span>
+                    <span id="confirmModalDiscount" class="font-bold tabular-nums">-Rp 0</span>
+                </div>
+
+                <div class="pt-2 border-t border-zinc-200 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-zinc-900 block leading-tight">Total Tagihan:</span>
+                        <span id="confirmModalPaymentInfo" class="text-[10px] text-zinc-400 font-normal">QRIS • Bank</span>
+                    </div>
+                    <span id="confirmModalGrandTotal" class="text-base font-black text-emerald-800 tabular-nums">Rp 0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fixed Footer Actions -->
+        <div class="p-4 sm:p-5 pt-3 border-t border-zinc-100 bg-zinc-50/50 rounded-b-3xl shrink-0">
+            <div class="grid grid-cols-2 gap-2.5">
+                <button type="button" id="btnCancelConfirmModal" class="touch-target py-2.5 px-3 rounded-xl border border-zinc-300 hover:bg-zinc-100 text-zinc-700 font-bold text-xs transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5">
+                    <i class="fa-light fa-pen-to-square text-zinc-400 text-xs"></i>
+                    <span>Cek Kembali</span>
+                </button>
+                <button type="button" id="btnConfirmSubmitBill" class="touch-target py-2.5 px-3 rounded-xl btn-primary font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                    <span>Ya, Buat Link</span>
+                    <i class="fa-light fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Hidden Canvas for jsQR decoding -->
@@ -539,7 +637,7 @@ document.addEventListener('DOMContentLoaded', function () {
         row.className = 'item-card p-3 rounded-xl bg-white border border-zinc-200/90 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 transition-all';
         row.innerHTML = `
             <div class="flex-1 w-full sm:w-auto">
-                <input type="text" name="items[${id}][name]" value="${name}" required placeholder="Nama menu / item" class="item-name touch-target w-full px-3 py-2 text-xs sm:text-sm bg-zinc-50/70 border border-zinc-200 rounded-lg focus:outline-none focus:border-emerald-700 focus:bg-white text-zinc-900 font-medium placeholder:text-zinc-400 transition-colors">
+                <input type="text" name="items[${id}][name]" value="${name}" required placeholder="Nama pesanan / item" class="item-name touch-target w-full px-3 py-2 text-xs sm:text-sm bg-zinc-50/70 border border-zinc-200 rounded-lg focus:outline-none focus:border-emerald-700 focus:bg-white text-zinc-900 font-medium placeholder:text-zinc-400 transition-colors">
             </div>
             <div class="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
                 <div class="relative flex items-center w-28 sm:w-32">
@@ -754,7 +852,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateFormatHint() {
         if (!activeFormatHintText || !receiptPriceType) return;
         if (receiptPriceType.value === 'total_price') {
-            activeFormatHintText.innerHTML = '<strong>Format Harga Total:</strong> Nominal di baris struk adalah total pesanan menu (misal <code>2x Nasi Goreng Rp 50.000</code>). AI otomatis membagi: <strong>Rp 50.000 ÷ 2 = Rp 25.000 / item</strong>.';
+            activeFormatHintText.innerHTML = '<strong>Format Harga Total:</strong> Nominal di baris struk adalah total pesanan (misal <code>2x Nasi Goreng Rp 50.000</code>). AI otomatis membagi: <strong>Rp 50.000 ÷ 2 = Rp 25.000 / item</strong>.';
         } else {
             activeFormatHintText.innerHTML = '<strong>Format Harga Satuan:</strong> Nominal di baris struk adalah harga 1 item (misal <code>2x Nasi Goreng @ 25.000</code>, tertulis 25.000). AI langsung mencatat Rp 25.000.';
         }
@@ -830,7 +928,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     calculateTotals();
 
                     aiAlert.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-900 border border-emerald-200 block';
-                    aiAlert.innerHTML = `<i class="fa-light fa-circle-check text-emerald-600 mr-1"></i> Struk berhasil dianalisis! Ditemukan <strong>${data.items.length} item</strong> menu pesanan.`;
+                    aiAlert.innerHTML = `<i class="fa-light fa-circle-check text-emerald-600 mr-1"></i> Struk berhasil dianalisis! Ditemukan <strong>${data.items.length} item</strong> pesanan.`;
                 } else {
                     aiAlert.className = 'p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-900 border border-rose-200 block';
                     aiAlert.innerHTML = `<i class="fa-light fa-circle-exclamation text-rose-600 mr-1"></i> ${data.error || 'Gagal memproses gambar struk.'}`;
@@ -843,17 +941,233 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Form Submit Loading Feedback
+    // ==========================================
+    // Confirmation & AI Warning Modal Handler
+    // ==========================================
+    const confirmSubmitModal = document.getElementById('confirmSubmitModal');
+    const btnCloseConfirmModal = document.getElementById('btnCloseConfirmModal');
+    const btnCancelConfirmModal = document.getElementById('btnCancelConfirmModal');
+    const btnConfirmSubmitBill = document.getElementById('btnConfirmSubmitBill');
+
+    function populateConfirmModal() {
+        const titleInput = document.getElementById('title');
+        const confirmTitle = document.getElementById('confirmModalEventTitle');
+        if (confirmTitle) {
+            confirmTitle.textContent = titleInput.value.trim() || 'Tanpa Judul Acara';
+        }
+
+        const rows = itemsContainer.querySelectorAll('.item-card');
+        let subtotal = 0;
+        let totalItemsQty = 0;
+        const itemCount = rows.length;
+
+        rows.forEach(row => {
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const qty = parseInt(row.querySelector('.item-qty').value) || 1;
+            subtotal += (price * qty);
+            totalItemsQty += qty;
+        });
+
+        const discount = parseFloat(inputDiscount.value) || 0;
+        const delivery = parseFloat(inputDeliveryFee.value) || 0;
+        const service = parseFloat(inputServiceFee.value) || 0;
+        const grandTotal = Math.max(0, subtotal + delivery + service - discount);
+
+        const confirmItemCount = document.getElementById('confirmModalItemCount');
+        if (confirmItemCount) {
+            confirmItemCount.textContent = `${itemCount} jenis (${totalItemsQty} item)`;
+        }
+
+        const confirmSubtotal = document.getElementById('confirmModalSubtotal');
+        if (confirmSubtotal) {
+            confirmSubtotal.textContent = formatRupiah(subtotal);
+        }
+
+        const confirmGrandTotal = document.getElementById('confirmModalGrandTotal');
+        if (confirmGrandTotal) {
+            confirmGrandTotal.textContent = formatRupiah(grandTotal);
+        }
+
+        // Delivery fee row
+        const confirmDeliveryRow = document.getElementById('confirmModalDeliveryRow');
+        const confirmDelivery = document.getElementById('confirmModalDelivery');
+        if (confirmDeliveryRow && confirmDelivery) {
+            if (delivery > 0) {
+                confirmDeliveryRow.classList.remove('hidden');
+                confirmDelivery.textContent = formatRupiah(delivery);
+            } else {
+                confirmDeliveryRow.classList.add('hidden');
+            }
+        }
+
+        // Service fee row
+        const confirmServiceRow = document.getElementById('confirmModalServiceRow');
+        const confirmService = document.getElementById('confirmModalService');
+        if (confirmServiceRow && confirmService) {
+            if (service > 0) {
+                confirmServiceRow.classList.remove('hidden');
+                confirmService.textContent = formatRupiah(service);
+            } else {
+                confirmServiceRow.classList.add('hidden');
+            }
+        }
+
+        // Discount row
+        const confirmDiscountRow = document.getElementById('confirmModalDiscountRow');
+        const confirmDiscount = document.getElementById('confirmModalDiscount');
+        if (confirmDiscountRow && confirmDiscount) {
+            if (discount > 0) {
+                confirmDiscountRow.classList.remove('hidden');
+                confirmDiscount.textContent = '-' + formatRupiah(discount);
+            } else {
+                confirmDiscountRow.classList.add('hidden');
+            }
+        }
+
+        // Payment info preview
+        const confirmPaymentInfo = document.getElementById('confirmModalPaymentInfo');
+        if (confirmPaymentInfo) {
+            const selectedQris = document.querySelector('input[name="qris_choice"]:checked');
+            const qrisType = selectedQris ? selectedQris.value : 'none';
+            const isBankEnabled = toggleEnableBank && toggleEnableBank.checked;
+
+            let paymentTexts = [];
+            if (qrisType === 'saved') {
+                paymentTexts.push('QRIS Akun');
+            } else if (qrisType === 'new') {
+                paymentTexts.push('QRIS Baru');
+            } else {
+                paymentTexts.push('Tanpa QRIS');
+            }
+
+            if (isBankEnabled) {
+                paymentTexts.push('Transfer Bank Aktif');
+            } else {
+                paymentTexts.push('Bank Nonaktif');
+            }
+
+            confirmPaymentInfo.textContent = paymentTexts.join(' • ');
+        }
+    }
+
+    function openConfirmModal() {
+        populateConfirmModal();
+        if (btnConfirmSubmitBill) {
+            btnConfirmSubmitBill.disabled = false;
+            btnConfirmSubmitBill.classList.remove('opacity-50', 'pointer-events-none');
+        }
+        if (window.Notiflix && typeof Notiflix.Loading !== 'undefined') {
+            Notiflix.Loading.remove();
+        }
+        if (confirmSubmitModal) {
+            confirmSubmitModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+    }
+
+    function closeConfirmModal() {
+        if (confirmSubmitModal) {
+            confirmSubmitModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    if (btnCloseConfirmModal) {
+        btnCloseConfirmModal.addEventListener('click', closeConfirmModal);
+    }
+    if (btnCancelConfirmModal) {
+        btnCancelConfirmModal.addEventListener('click', closeConfirmModal);
+    }
+    if (confirmSubmitModal) {
+        confirmSubmitModal.addEventListener('click', function (e) {
+            if (e.target === confirmSubmitModal) {
+                closeConfirmModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && confirmSubmitModal && !confirmSubmitModal.classList.contains('hidden')) {
+            closeConfirmModal();
+        }
+    });
+
+    // Validation & Open Confirmation Trigger
+    function handleValidateAndOpenConfirm() {
+        // 1. Browser HTML5 validation
+        if (!createBillForm.checkValidity()) {
+            createBillForm.reportValidity();
+            return;
+        }
+
+        // 2. Minimum items validation
+        const rows = itemsContainer.querySelectorAll('.item-card');
+        if (rows.length === 0) {
+            if (window.Notiflix) {
+                Notiflix.Notify.failure('Tambahkan minimal 1 item menu pesanan.');
+            } else {
+                alert('Tambahkan minimal 1 item menu pesanan.');
+            }
+            return;
+        }
+
+        // 3. Open confirmation popup (without triggering any loading)
+        openConfirmModal();
+    }
+
+    // Connect bottom floating bar button
+    const btnSubmitBill = document.getElementById('btnSubmitBill');
+    if (btnSubmitBill) {
+        btnSubmitBill.addEventListener('click', function (e) {
+            e.preventDefault();
+            handleValidateAndOpenConfirm();
+        });
+    }
+
+    // Form Submit Interception & Loading Feedback
+    let isConfirmed = false;
     const createBillForm = document.getElementById('createBillForm');
+
     if (createBillForm) {
-        createBillForm.addEventListener('submit', function () {
-            const btnSubmit = document.getElementById('btnSubmitBill');
-            if (btnSubmit) {
-                btnSubmit.disabled = true;
-                btnSubmit.classList.add('opacity-50', 'pointer-events-none');
+        createBillForm.addEventListener('submit', function (e) {
+            if (!isConfirmed) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') {
+                    e.stopImmediatePropagation();
+                }
+                handleValidateAndOpenConfirm();
+                return false;
+            }
+
+            // Once confirmed, apply loading state
+            if (btnSubmitBill) {
+                btnSubmitBill.disabled = true;
+                btnSubmitBill.classList.add('opacity-50', 'pointer-events-none');
             }
             if (window.Notiflix) {
                 Notiflix.Loading.pulse('Menyimpan & menyiapkan tagihan patungan...');
+            }
+        });
+    }
+
+    if (btnConfirmSubmitBill) {
+        btnConfirmSubmitBill.addEventListener('click', function () {
+            isConfirmed = true;
+            btnConfirmSubmitBill.disabled = true;
+            btnConfirmSubmitBill.classList.add('opacity-50', 'pointer-events-none');
+            closeConfirmModal();
+
+            if (btnSubmitBill) {
+                btnSubmitBill.disabled = true;
+                btnSubmitBill.classList.add('opacity-50', 'pointer-events-none');
+            }
+            if (window.Notiflix) {
+                Notiflix.Loading.pulse('Menyimpan & menyiapkan tagihan patungan...');
+            }
+
+            if (createBillForm) {
+                createBillForm.submit();
             }
         });
     }

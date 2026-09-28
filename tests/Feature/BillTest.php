@@ -38,6 +38,10 @@ class BillTest extends TestCase
         $response->assertSee('Panduan Format');
         $response->assertSee('Kapan Harus Memilih Format?');
         $response->assertDontSee('id="tabManualMode"', false);
+        $response->assertSee('Konfirmasi & Cek Ulang Tagihan', false);
+        $response->assertSee('Peringatan: Periksa Hasil Pindai AI');
+        $response->assertSee('AI sangat mungkin melakukan kesalahan');
+        $response->assertSee('id="confirmSubmitModal"', false);
     }
 
     public function test_user_can_create_bill_with_manual_items_and_redirect_to_show(): void

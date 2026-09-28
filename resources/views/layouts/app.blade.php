@@ -195,8 +195,9 @@
 
         // Automatic smooth loading overlay for standard POST transitions
         document.addEventListener('submit', function (e) {
+            if (e.defaultPrevented) return;
             const form = e.target;
-            if (form && form.method && form.method.toUpperCase() === 'POST' && !form.dataset.ajax) {
+            if (form && form.method && form.method.toUpperCase() === 'POST' && !form.dataset.ajax && !form.dataset.manualLoading) {
                 window.showPageLoading('Sedang memproses...');
             }
         });

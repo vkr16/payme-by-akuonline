@@ -124,14 +124,14 @@ $$\text{Total Akhir Dibayar} = \text{Subtotal Item Pengguna} + \text{Biaya Tamba
    - **Database Models & Migrations:** `UserQris`, `UserBank`, `Bill`, `BillItem`, `BillBank`.
    - **Services:** [QrisService.php](file:///home/fikri/Development/payme/app/Services/QrisService.php) (EMVCo parser & dynamic QRIS generator) dan [ReceiptParserService.php](file:///home/fikri/Development/payme/app/Services/ReceiptParserService.php) (NineRouter Gemini Vision parser).
    - **Controller:** [BillController.php](file:///home/fikri/Development/payme/app/Http/Controllers/BillController.php) (`create`, `store`, `parseReceipt`, `show`).
-   - **Views:** [create.blade.php](file:///home/fikri/Development/payme/resources/views/bills/create.blade.php).
+   - **Views:** [create.blade.php](file:///home/fikri/Development/payme/resources/views/bills/create.blade.php) (Dilengkapi modal popup konfirmasi cek ulang pra-submit dengan peringatan potensi kekeliruan AI scan struk, live preview snapshot tagihan, validasi browser HTML5, serta indikator loading feedback).
 7. **Halaman Pembayaran & Mekanisme Approval Host (Anti-Fake Claim):**
    - **Database Models & Migrations:** `BillClaim` & `BillClaimItem` dengan tracking status `pending` dan `confirmed`.
    - **Interaktif Pemilihan Menu:** Stepper kuantitas porsi pesanan dengan live calculation AJAX proporsionalitas ongkir/layanan/diskon.
    - **Dynamic QRIS Modal:** Menghasilkan QR code SVG/canvas ber-nominal terkunci pas sesuai porsi yang dipilih partisipan.
    - **Klaim Pembayaran ("Saya Sudah Bayar"):** Form modal input nama & metode bayar yang mencatat klaim ke database.
    - **Host Claims Management:** Khusus user dengan sesi Host, muncul card approval untuk memverifikasi dana masuk ("Konfirmasi Dana Masuk" / "Tolak Klaim").
-   - **Automated Tests:** [BillTest.php](file:///home/fikri/Development/payme/tests/Feature/BillTest.php) (11 passed tests, total suite: 19 passed tests).
+   - **Automated Tests:** [BillTest.php](file:///home/fikri/Development/payme/tests/Feature/BillTest.php) (23 passed tests, total suite: 46 passed tests).
 
 ### 🚀 Roadmap Selanjutnya (Upcoming Work):
 1. **Post-Payment "Buy Me a Coffee" Prompt:**
