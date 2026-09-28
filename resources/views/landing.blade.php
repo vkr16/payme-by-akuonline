@@ -27,7 +27,7 @@
             Foto struk untuk bagi pesanan per orang secara proporsional. Teman pilih item tagihan sendiri, dapatkan QRIS dengan nominal pas terkunci — tanpa repot hitung manual, tanpa risiko salah transfer.
         </p>        <!-- Action CTAs -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8">
-            <a href="#daftar" class="touch-target w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold btn-primary shadow-xs">
+            <a href="{{ route('register') }}" class="touch-target w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold btn-primary shadow-xs">
                 <span>Mulai Gratis Sekarang</span>
                 <i class="fa-light fa-arrow-right text-xs"></i>
             </a>
