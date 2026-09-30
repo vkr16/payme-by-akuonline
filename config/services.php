@@ -37,8 +37,8 @@ return [
 
     'ninerouter' => [
         'api_key' => env('NINEROUTER_API_KEY'),
-        'api_base' => env('NINEROUTER_API_BASE', 'https://api.9router.com/v1'),
-        'model' => env('NINEROUTER_MODEL', 'gemma4-31b'),
+        'api_base' => env('NINEROUTER_API_BASE', 'https://9router.akuonline.my.id/v1'),
+        'model' => env('NINEROUTER_MODEL', 'Gemini'),
     ],
 
 ];

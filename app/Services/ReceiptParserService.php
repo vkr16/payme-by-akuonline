@@ -98,8 +98,8 @@ class ReceiptParserService
     protected function parseSingleImage(string $filePath, string $priceType = 'unit_price'): array
     {
         $apiKey = (string) config('services.ninerouter.api_key', '');
-        $baseUrl = (string) config('services.ninerouter.api_base', 'https://api.9router.com/v1');
-        $model = (string) config('services.ninerouter.model', 'gemma4-31b');
+        $baseUrl = (string) config('services.ninerouter.api_base', 'https://9router.akuonline.my.id/v1');
+        $model = (string) config('services.ninerouter.model', 'Gemini');
 
         if (! file_exists($filePath)) {
             return $this->emptyFallback('File struk tidak ditemukan di server: '.$filePath);
@@ -123,7 +123,7 @@ class ReceiptParserService
 
         $prompt = <<<PROMPT
 Anda adalah asisten AI ekstraksi struk/nota belanja di Indonesia (ShopeeFood, GoFood, GrabFood, Restoran, Supermarket, dll).
-Tugas Anda adalah membaca gambar struk ini dan mengembalikan JSON HANYA dengan struktur berikut tanpa teks pembuka atau penutup:
+Tugas Anda adalah membaca gambar struk ini dan mengembalikan HANYA JSON dengan struktur berikut tanpa teks pembuka atau penutup:
 
 {
   "merchant_name": "Nama Toko / Restoran",
