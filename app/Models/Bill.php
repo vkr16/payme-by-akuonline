@@ -160,7 +160,28 @@ class Bill extends Model
      */
     public function getRemainingConfirmedAmountAttribute(): float
     {
-        return max(0, $this->grand_total - $this->total_confirmed_paid);
+        $remaining = (float) max(0, $this->grand_total - $this->total_confirmed_paid);
+
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+        $allItemsConfirmed = $items->isNotEmpty();
+        foreach ($items as $item) {
+            if ($item->confirmed_claimed_qty < $item->qty) {
+                $allItemsConfirmed = false;
+                break;
+            }
+        }
+
+        if ($allItemsConfirmed) {
+            $totalCollected = $this->relationLoaded('claims')
+                ? (float) $this->claims->where('status', 'confirmed')->sum('amount')
+                : (float) $this->claims()->where('status', 'confirmed')->sum('amount');
+
+            if ($remaining <= 0.05 || $totalCollected >= $this->grand_total) {
+                return 0.0;
+            }
+        }
+
+        return (float) round($remaining, 2);
     }
 
     /**
@@ -181,9 +202,9 @@ class Bill extends Model
      * A bill is ONLY fully settled when:
      * 1. The bill has items ($items->isNotEmpty()).
      * 2. There is at least one confirmed payment (total_confirmed_paid > 0).
-     * 3. The remaining balance to be confirmed is 0 (remaining_confirmed_amount <= 0.01).
+     * 3. Every single item in the bill has its required quantity fully confirmed (confirmed_claimed_qty >= qty).
      * 4. There are NO pending claims waiting for host confirmation.
-     * 5. Every single item in the bill has its required quantity fully confirmed (confirmed_claimed_qty >= qty).
+     * 5. The remaining balance to be confirmed is 0 (remaining_confirmed_amount <= 0.05).
      */
     public function isFullySettled(): bool
     {
@@ -197,9 +218,11 @@ class Bill extends Model
             return false;
         }
 
-        // Must have 0 remaining unpaid monetary balance
-        if ($this->remaining_confirmed_amount > 0.01) {
-            return false;
+        // Every item must be fully confirmed
+        foreach ($items as $item) {
+            if ($item->confirmed_claimed_qty < $item->qty) {
+                return false;
+            }
         }
 
         // Must NOT have pending claims waiting for confirmation
@@ -211,11 +234,9 @@ class Bill extends Model
             return false;
         }
 
-        // Every item must be fully confirmed
-        foreach ($items as $item) {
-            if ($item->confirmed_claimed_qty < $item->qty) {
-                return false;
-            }
+        // Must have 0 remaining unpaid monetary balance (allowing <= 0.05 floating residue)
+        if ($this->remaining_confirmed_amount > 0.05) {
+            return false;
         }
 
         return true;

@@ -302,20 +302,24 @@ class BillController extends Controller
 
         if ($totalBillSubtotal > 0 && $itemsSubtotal > 0) {
             $proportion = $itemsSubtotal / $totalBillSubtotal;
-            $deliveryFeeShare = (float) round($proportion * (float) $bill->delivery_fee);
-            $serviceFeeShare = (float) round($proportion * (float) $bill->service_fee);
-            $discountShare = (float) round($proportion * (float) $bill->discount);
-            $feeShare = ($deliveryFeeShare + $serviceFeeShare) - $discountShare;
+            $netExtraFees = (float) $bill->net_extra_fees;
+            $deliveryFeeShare = (float) round($proportion * (float) $bill->delivery_fee, 2);
+            $serviceFeeShare = (float) round($proportion * (float) $bill->service_fee, 2);
+            $discountShare = (float) round($proportion * (float) $bill->discount, 2);
+            $feeShare = (float) round($proportion * $netExtraFees, 2);
         }
 
-        $exactPayable = (float) max(0, round($itemsSubtotal + $feeShare));
-        $totalPayable = $exactPayable;
+        $exactPayable = (float) max(0, round($itemsSubtotal + $feeShare, 2));
+        $roundedUpPayable = (float) ceil($exactPayable);
+        $totalPayable = $roundedUpPayable;
         $roundUpExtra = 0.0;
 
         if ($roundUp && $exactPayable > 0) {
             $rounded = (float) (ceil($exactPayable / 1000) * 1000);
-            $roundUpExtra = max(0, $rounded - $exactPayable);
+            $roundUpExtra = (float) max(0, round($rounded - $exactPayable, 2));
             $totalPayable = $rounded;
+        } else {
+            $roundUpExtra = (float) max(0, round($roundedUpPayable - $exactPayable, 2));
         }
 
         $dynamicQrisPayload = '';
@@ -404,14 +408,16 @@ class BillController extends Controller
 
         if ($totalBillSubtotal > 0 && $itemsSubtotal > 0) {
             $proportion = $itemsSubtotal / $totalBillSubtotal;
-            $deliveryFeeShare = (float) round($proportion * (float) $bill->delivery_fee);
-            $serviceFeeShare = (float) round($proportion * (float) $bill->service_fee);
-            $discountShare = (float) round($proportion * (float) $bill->discount);
-            $feeShare = ($deliveryFeeShare + $serviceFeeShare) - $discountShare;
+            $netExtraFees = (float) $bill->net_extra_fees;
+            $deliveryFeeShare = (float) round($proportion * (float) $bill->delivery_fee, 2);
+            $serviceFeeShare = (float) round($proportion * (float) $bill->service_fee, 2);
+            $discountShare = (float) round($proportion * (float) $bill->discount, 2);
+            $feeShare = (float) round($proportion * $netExtraFees, 2);
         }
 
-        $exactPaid = (float) max(0, round($itemsSubtotal + $feeShare));
-        $totalPaid = $exactPaid;
+        $exactPaid = (float) max(0, round($itemsSubtotal + $feeShare, 2));
+        $roundedUpPayable = (float) ceil($exactPaid);
+        $totalPaid = $roundedUpPayable;
 
         if ($request->filled('actual_amount')) {
             $customActual = (float) $request->input('actual_amount');
@@ -426,8 +432,8 @@ class BillController extends Controller
             $totalPaid = (float) (ceil($exactPaid / 1000) * 1000);
         }
 
-        $billAmount = min($totalPaid, $exactPaid);
-        $tipAmount = max(0, $totalPaid - $billAmount);
+        $billAmount = (float) min($totalPaid, $exactPaid);
+        $tipAmount = (float) max(0, round($totalPaid - $billAmount, 2));
 
         return DB::transaction(function () use ($bill, $payerName, $totalPaid, $billAmount, $tipAmount, $paymentMethod, $validItemsToClaim) {
             $claim = BillClaim::create([

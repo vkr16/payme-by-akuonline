@@ -93,7 +93,7 @@ class BillClaim extends Model
             $feeShare = $proportion * $netExtraFees;
         }
 
-        return (float) max(0, round($itemsSubtotal + $feeShare));
+        return (float) max(0, round($itemsSubtotal + $feeShare, 2));
     }
 
     /**
@@ -105,7 +105,7 @@ class BillClaim extends Model
             return (float) $this->tip_amount;
         }
 
-        return (float) max(0, (float) $this->amount - $this->exact_payable);
+        return (float) max(0, round((float) $this->amount - $this->exact_payable, 2));
     }
 
     /**
@@ -154,12 +154,12 @@ class BillClaim extends Model
         $prop = $totBillSubtotal > 0 ? ($itemsSubtotal / $totBillSubtotal) : 0;
         $propPercent = round($prop * 100, 1);
 
-        $shareDeliv = round($prop * (float) ($bill?->delivery_fee ?? 0));
-        $shareServ = round($prop * (float) ($bill?->service_fee ?? 0));
-        $shareDisc = round($prop * (float) ($bill?->discount ?? 0));
+        $shareDeliv = round($prop * (float) ($bill?->delivery_fee ?? 0), 2);
+        $shareServ = round($prop * (float) ($bill?->service_fee ?? 0), 2);
+        $shareDisc = round($prop * (float) ($bill?->discount ?? 0), 2);
 
         $amountPaid = (float) $this->amount;
-        $exactPayable = $this->exact_payable;
+        $exactPayable = (float) $this->exact_payable;
         $billAmount = (float) ($this->bill_amount > 0 ? $this->bill_amount : min($amountPaid, $exactPayable));
         $tipAmount = (float) ($this->tip_amount > 0 ? $this->tip_amount : $this->surplus);
 

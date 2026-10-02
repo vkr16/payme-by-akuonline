@@ -1167,7 +1167,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let activeClaimData = null;
 
     function formatRupiah(number) {
-        return 'Rp ' + (new Intl.NumberFormat('id-ID').format(Math.round(number || 0)));
+        const val = parseFloat(number) || 0;
+        return 'Rp ' + (new Intl.NumberFormat('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(val));
     }
 
     // Collect currently selected items: { [item_id]: qty }
@@ -1313,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 partFeeShare.textContent = formatRupiah(data.fee_share + data.discount_share);
                 partDiscountShare.textContent = '-' + formatRupiah(data.discount_share);
 
-                if (data.round_up_extra > 0) {
+                if (roundUp && data.round_up_extra > 0) {
                     partRoundUpBadge.textContent = '+' + formatRupiah(data.round_up_extra);
                     partRoundUpBadge.classList.remove('hidden');
                 } else {
@@ -2465,8 +2469,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const pendingClaims = claims.filter(c => c.status === 'pending');
             const confirmedBillTotal = confirmedClaims.reduce((sum, c) => sum + parseFloat(c.bill_amount || c.amount || 0), 0);
             const confirmedTipsTotal = confirmedClaims.reduce((sum, c) => sum + parseFloat(c.tip_amount || c.surplus || 0), 0);
+            const totalCollectedWithTips = confirmedClaims.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
             const grandTotal = {{ (float) $bill->grand_total }};
-            const remaining = Math.max(0, grandTotal - confirmedBillTotal);
+            let remaining = Math.max(0, grandTotal - confirmedBillTotal);
             const pct = grandTotal > 0 ? Math.min(100, Math.round((confirmedBillTotal / grandTotal) * 1000) / 10) : 0;
             // Check item-by-item confirmation
             const cards = document.querySelectorAll('#participantItemsContainer .item-selection-card');
@@ -2488,8 +2493,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
+            if (allItemsConfirmed && (remaining <= 0.05 || totalCollectedWithTips >= grandTotal)) {
+                remaining = 0;
+            }
+
             const isFullySettled = confirmedBillTotal > 0
-                && remaining <= 0.01
+                && remaining <= 0.05
                 && pendingClaims.length === 0
                 && allItemsConfirmed;
 
