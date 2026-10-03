@@ -275,23 +275,23 @@
                 <!-- Financial Summary Box -->
                 <div class="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1.5 text-xs">
                     <div class="flex justify-between items-center gap-2 text-zinc-600">
-                        <span class="truncate">Subtotal Item:</span>
+                        <span class="break-words">Subtotal Item:</span>
                         <span id="summarySubtotal" class="font-bold text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
                     </div>
                     <div class="flex justify-between items-center gap-2 text-zinc-600" id="rowSummaryDelivery">
-                        <span class="truncate">Ongkos Kirim:</span>
+                        <span class="break-words">Ongkos Kirim:</span>
                         <span id="summaryDelivery" class="font-medium text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
                     </div>
                     <div class="flex justify-between items-center gap-2 text-zinc-600" id="rowSummaryService">
-                        <span class="truncate">Biaya Layanan:</span>
+                        <span class="break-words">Biaya Layanan:</span>
                         <span id="summaryService" class="font-medium text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
                     </div>
                     <div class="flex justify-between items-center gap-2 text-emerald-700" id="rowSummaryDiscount">
-                        <span class="truncate">Potongan Diskon:</span>
+                        <span class="break-words">Potongan Diskon:</span>
                         <span id="summaryDiscount" class="font-bold tabular-nums flex-shrink-0 whitespace-nowrap text-right">-Rp 0</span>
                     </div>
                     <div class="pt-2 border-t border-zinc-200 flex justify-between items-center gap-2 text-sm font-bold text-zinc-900">
-                        <span class="truncate">Grand Total Struk:</span>
+                        <span class="break-words">Grand Total Struk:</span>
                         <span id="summaryGrandTotal" class="text-base text-emerald-800 font-black tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
                     </div>
                 </div>
@@ -517,39 +517,39 @@
             <!-- Bill Snapshot Box -->
             <div class="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/90 space-y-2 text-xs">
                 <div class="flex items-center justify-between gap-2 border-b border-zinc-200/70 pb-2">
-                    <span class="text-zinc-500 font-medium truncate">Nama Acara:</span>
-                    <span id="confirmModalEventTitle" class="font-bold text-zinc-900 truncate max-w-[210px] text-right flex-shrink-0">-</span>
+                    <span class="text-zinc-500 font-medium break-words">Nama Acara:</span>
+                    <span id="confirmModalEventTitle" class="font-bold text-zinc-900 break-words max-w-[210px] text-right">-</span>
                 </div>
 
                 <div class="flex items-center justify-between gap-2 text-zinc-600">
-                    <span class="truncate">Daftar Pesanan:</span>
+                    <span class="break-words">Daftar Pesanan:</span>
                     <span id="confirmModalItemCount" class="font-semibold text-zinc-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right">0 pesanan</span>
                 </div>
 
                 <div class="flex items-center justify-between gap-2 text-zinc-600">
-                    <span class="truncate">Subtotal Item:</span>
+                    <span class="break-words">Subtotal Item:</span>
                     <span id="confirmModalSubtotal" class="font-semibold text-zinc-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
                 </div>
 
                 <div id="confirmModalDeliveryRow" class="flex items-center justify-between gap-2 text-zinc-600 hidden">
-                    <span class="truncate">Ongkos Kirim:</span>
+                    <span class="break-words">Ongkos Kirim:</span>
                     <span id="confirmModalDelivery" class="font-medium text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
                 </div>
 
                 <div id="confirmModalServiceRow" class="flex items-center justify-between gap-2 text-zinc-600 hidden">
-                    <span class="truncate">Biaya Layanan:</span>
+                    <span class="break-words">Biaya Layanan:</span>
                     <span id="confirmModalService" class="font-medium text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
                 </div>
 
                 <div id="confirmModalDiscountRow" class="flex items-center justify-between gap-2 text-emerald-700 hidden">
-                    <span class="truncate">Potongan Diskon:</span>
+                    <span class="break-words">Potongan Diskon:</span>
                     <span id="confirmModalDiscount" class="font-bold tabular-nums flex-shrink-0 whitespace-nowrap text-right">-Rp 0</span>
                 </div>
 
                 <div class="pt-2 border-t border-zinc-200 flex items-center justify-between gap-2">
                     <div class="min-w-0">
-                        <span class="font-bold text-zinc-900 block leading-tight truncate">Total Tagihan:</span>
-                        <span id="confirmModalPaymentInfo" class="text-[10px] text-zinc-400 font-normal truncate block">QRIS • Bank</span>
+                        <span class="font-bold text-zinc-900 block leading-tight break-words">Total Tagihan:</span>
+                        <span id="confirmModalPaymentInfo" class="text-[10px] text-zinc-400 font-normal break-words block">QRIS • Bank</span>
                     </div>
                     <span id="confirmModalGrandTotal" class="text-base font-black text-emerald-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
                 </div>
