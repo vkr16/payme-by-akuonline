@@ -77,9 +77,9 @@ class Bill extends Model
      */
     public function getItemsSubtotalAttribute(): float
     {
-        return (float) $this->items->sum(function ($item) {
-            return (float) $item->price * (int) $item->qty;
-        });
+        return (float) round($this->items->sum(function ($item) {
+            return round((float) $item->price * (int) $item->qty, 2);
+        }), 2);
     }
 
     /**
@@ -87,7 +87,7 @@ class Bill extends Model
      */
     public function getNetExtraFeesAttribute(): float
     {
-        return (float) ($this->delivery_fee + $this->service_fee - $this->discount);
+        return (float) round((float) $this->delivery_fee + (float) $this->service_fee - (float) $this->discount, 2);
     }
 
     /**
@@ -95,7 +95,7 @@ class Bill extends Model
      */
     public function getGrandTotalAttribute(): float
     {
-        return max(0, $this->items_subtotal + $this->net_extra_fees);
+        return (float) max(0, round($this->items_subtotal + $this->net_extra_fees, 2));
     }
 
     /**
@@ -117,12 +117,32 @@ class Bill extends Model
         };
 
         if ($this->relationLoaded('claims')) {
-            return (float) $this->claims->where('status', 'confirmed')->sum($resolveClaimBillAmount);
+            $confirmedSum = (float) $this->claims->where('status', 'confirmed')->sum($resolveClaimBillAmount);
+        } else {
+            $claims = $this->claims()->where('status', 'confirmed')->get();
+            $confirmedSum = (float) $claims->sum($resolveClaimBillAmount);
         }
 
-        $claims = $this->claims()->where('status', 'confirmed')->get();
+        $confirmedSum = (float) round($confirmedSum, 2);
 
-        return (float) $claims->sum($resolveClaimBillAmount);
+        // Normalize penny allocation remainder when all items are fully confirmed
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+        $allItemsConfirmed = $items->isNotEmpty();
+        foreach ($items as $item) {
+            if ($item->confirmed_claimed_qty < $item->qty) {
+                $allItemsConfirmed = false;
+                break;
+            }
+        }
+
+        if ($allItemsConfirmed) {
+            $diff = abs($this->grand_total - $confirmedSum);
+            if ($diff <= 0.05) {
+                return (float) $this->grand_total;
+            }
+        }
+
+        return $confirmedSum;
     }
 
     /**
@@ -139,12 +159,28 @@ class Bill extends Model
         };
 
         if ($this->relationLoaded('claims')) {
-            return (float) $this->claims->where('status', 'confirmed')->sum($resolveClaimTipAmount);
+            return (float) round($this->claims->where('status', 'confirmed')->sum($resolveClaimTipAmount), 2);
         }
 
         $claims = $this->claims()->where('status', 'confirmed')->get();
 
-        return (float) $claims->sum($resolveClaimTipAmount);
+        return (float) round($claims->sum($resolveClaimTipAmount), 2);
+    }
+
+    /**
+     * Get human-formatted total confirmed tips with decimals only if applicable.
+     */
+    public function getFormattedTotalConfirmedTipsAttribute(): string
+    {
+        $val = (float) $this->total_confirmed_tips;
+        if (floor($val) == $val) {
+            return 'Rp '.number_format($val, 0, ',', '.');
+        }
+
+        $formatted = number_format($val, 2, ',', '.');
+        $formatted = rtrim(rtrim($formatted, '0'), ',');
+
+        return 'Rp '.$formatted;
     }
 
     /**
@@ -160,7 +196,28 @@ class Bill extends Model
      */
     public function getRemainingConfirmedAmountAttribute(): float
     {
-        return max(0, $this->grand_total - $this->total_confirmed_paid);
+        $remaining = (float) max(0, round($this->grand_total - $this->total_confirmed_paid, 2));
+
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+        $allItemsConfirmed = $items->isNotEmpty();
+        foreach ($items as $item) {
+            if ($item->confirmed_claimed_qty < $item->qty) {
+                $allItemsConfirmed = false;
+                break;
+            }
+        }
+
+        if ($allItemsConfirmed) {
+            $totalCollected = $this->relationLoaded('claims')
+                ? (float) $this->claims->where('status', 'confirmed')->sum('amount')
+                : (float) $this->claims()->where('status', 'confirmed')->sum('amount');
+
+            if ($remaining <= 0.05 || $totalCollected >= $this->grand_total) {
+                return 0.0;
+            }
+        }
+
+        return (float) round($remaining, 2);
     }
 
     /**
@@ -181,9 +238,9 @@ class Bill extends Model
      * A bill is ONLY fully settled when:
      * 1. The bill has items ($items->isNotEmpty()).
      * 2. There is at least one confirmed payment (total_confirmed_paid > 0).
-     * 3. The remaining balance to be confirmed is 0 (remaining_confirmed_amount <= 0.01).
+     * 3. Every single item in the bill has its required quantity fully confirmed (confirmed_claimed_qty >= qty).
      * 4. There are NO pending claims waiting for host confirmation.
-     * 5. Every single item in the bill has its required quantity fully confirmed (confirmed_claimed_qty >= qty).
+     * 5. The remaining balance to be confirmed is 0 (remaining_confirmed_amount <= 0.05).
      */
     public function isFullySettled(): bool
     {
@@ -197,9 +254,11 @@ class Bill extends Model
             return false;
         }
 
-        // Must have 0 remaining unpaid monetary balance
-        if ($this->remaining_confirmed_amount > 0.01) {
-            return false;
+        // Every item must be fully confirmed
+        foreach ($items as $item) {
+            if ($item->confirmed_claimed_qty < $item->qty) {
+                return false;
+            }
         }
 
         // Must NOT have pending claims waiting for confirmation
@@ -211,11 +270,9 @@ class Bill extends Model
             return false;
         }
 
-        // Every item must be fully confirmed
-        foreach ($items as $item) {
-            if ($item->confirmed_claimed_qty < $item->qty) {
-                return false;
-            }
+        // Must have 0 remaining unpaid monetary balance (allowing <= 0.05 floating residue)
+        if ($this->remaining_confirmed_amount > 0.05) {
+            return false;
         }
 
         return true;
@@ -245,7 +302,7 @@ class Bill extends Model
             'total_confirmed_paid' => (float) $this->total_confirmed_paid,
             'total_confirmed_paid_formatted' => 'Rp '.number_format($this->total_confirmed_paid, 0, ',', '.'),
             'total_confirmed_tips' => (float) $this->total_confirmed_tips,
-            'total_confirmed_tips_formatted' => 'Rp '.number_format($this->total_confirmed_tips, 0, ',', '.'),
+            'total_confirmed_tips_formatted' => $this->formatted_total_confirmed_tips,
             'has_tips' => $this->total_confirmed_tips > 0,
             'remaining_confirmed_amount' => (float) $this->remaining_confirmed_amount,
             'remaining_confirmed_amount_formatted' => 'Rp '.number_format($this->remaining_confirmed_amount, 0, ',', '.'),
