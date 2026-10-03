@@ -1254,4 +1254,59 @@ class BillTest extends TestCase
         $this->assertEquals(100.0, $summary['progress_percentage']);
         $this->assertTrue($summary['is_fully_settled']);
     }
+
+    public function test_payment_history_displays_pembulatan_tip_label_with_conditional_decimals(): void
+    {
+        $bill = Bill::factory()->create();
+
+        // 1. Claim with decimal tip (0.55)
+        $claim1 = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Alice 0.55',
+            'amount' => 1000,
+            'bill_amount' => 999.45,
+            'tip_amount' => 0.55,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        // 2. Claim with single decimal tip (0.50 -> 0.5)
+        $claim2 = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Bob 0.5',
+            'amount' => 1000,
+            'bill_amount' => 999.50,
+            'tip_amount' => 0.50,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        // 3. Claim with whole integer tip (521)
+        $claim3 = BillClaim::create([
+            'bill_id' => $bill->id,
+            'payer_name' => 'Charlie 521',
+            'amount' => 50521,
+            'bill_amount' => 50000,
+            'tip_amount' => 521,
+            'payment_method' => 'qris',
+            'status' => 'pending',
+        ]);
+
+        // Test model accessors
+        $this->assertEquals('Rp 0,55', $claim1->formatted_tip_amount);
+        $this->assertEquals('Rp 0,5', $claim2->formatted_tip_amount);
+        $this->assertEquals('Rp 521', $claim3->formatted_tip_amount);
+
+        // Test bill page renders the correct label and decimal amounts
+        $response = $this->get('/b/'.$bill->slug);
+        $response->assertStatus(200);
+
+        // Should see the new label +Pembulatan/Tip
+        $response->assertSee('+Pembulatan/Tip Rp 0,55');
+        $response->assertSee('+Pembulatan/Tip Rp 0,5');
+        $response->assertSee('+Pembulatan/Tip Rp 521');
+
+        // Should NOT see the old rounded-off "+Tip Rp 1"
+        $response->assertDontSee('+Tip Rp 1');
+    }
 }

@@ -111,6 +111,22 @@ class BillClaim extends Model
     }
 
     /**
+     * Get human-formatted tip amount with decimals only if applicable.
+     */
+    public function getFormattedTipAmountAttribute(): string
+    {
+        $val = (float) $this->tip_amount;
+        if (floor($val) == $val) {
+            return 'Rp '.number_format($val, 0, ',', '.');
+        }
+
+        $formatted = number_format($val, 2, ',', '.');
+        $formatted = rtrim(rtrim($formatted, '0'), ',');
+
+        return 'Rp '.$formatted;
+    }
+
+    /**
      * Check if claim is confirmed by host.
      */
     public function isConfirmed(): bool

@@ -168,6 +168,22 @@ class Bill extends Model
     }
 
     /**
+     * Get human-formatted total confirmed tips with decimals only if applicable.
+     */
+    public function getFormattedTotalConfirmedTipsAttribute(): string
+    {
+        $val = (float) $this->total_confirmed_tips;
+        if (floor($val) == $val) {
+            return 'Rp '.number_format($val, 0, ',', '.');
+        }
+
+        $formatted = number_format($val, 2, ',', '.');
+        $formatted = rtrim(rtrim($formatted, '0'), ',');
+
+        return 'Rp '.$formatted;
+    }
+
+    /**
      * Total amount claimed (pending + confirmed).
      */
     public function getTotalClaimedAttribute(): float
@@ -286,7 +302,7 @@ class Bill extends Model
             'total_confirmed_paid' => (float) $this->total_confirmed_paid,
             'total_confirmed_paid_formatted' => 'Rp '.number_format($this->total_confirmed_paid, 0, ',', '.'),
             'total_confirmed_tips' => (float) $this->total_confirmed_tips,
-            'total_confirmed_tips_formatted' => 'Rp '.number_format($this->total_confirmed_tips, 0, ',', '.'),
+            'total_confirmed_tips_formatted' => $this->formatted_total_confirmed_tips,
             'has_tips' => $this->total_confirmed_tips > 0,
             'remaining_confirmed_amount' => (float) $this->remaining_confirmed_amount,
             'remaining_confirmed_amount_formatted' => 'Rp '.number_format($this->remaining_confirmed_amount, 0, ',', '.'),

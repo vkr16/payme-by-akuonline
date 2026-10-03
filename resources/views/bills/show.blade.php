@@ -136,7 +136,7 @@
                 <div class="flex justify-between items-center text-[10px] text-zinc-400">
                     <span id="billRemainingAmountText">Sisa: Rp {{ number_format($bill->remaining_confirmed_amount, 0, ',', '.') }}</span>
                     <span id="billTotalTipsText" class="{{ $bill->total_confirmed_tips > 0 ? '' : 'hidden ' }}text-emerald-700 font-semibold inline-flex items-center gap-1">
-                        <i class="fa-light fa-gift text-[9px]"></i> Tip: Rp {{ number_format($bill->total_confirmed_tips, 0, ',', '.') }}
+                        <i class="fa-light fa-gift text-[9px]"></i> Pembulatan/Tip: {{ $bill->formatted_total_confirmed_tips }}
                     </span>
                     <span>{{ $bill->items->sum('qty') }} item total</span>
                 </div>
@@ -433,7 +433,7 @@
                                 @if(($claim->tip_amount ?? 0) > 0)
                                     <div class="text-[10px] text-emerald-700 font-semibold flex items-center justify-end gap-1">
                                         <i class="fa-light fa-gift text-[9px]"></i>
-                                        <span>+Tip Rp {{ number_format($claim->tip_amount, 0, ',', '.') }}</span>
+                                        <span>+Pembulatan/Tip {{ $claim->formatted_tip_amount }}</span>
                                     </div>
                                 @endif
                             </div>
@@ -2257,7 +2257,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         ${(claim.tip_amount && claim.tip_amount > 0) ? `
                             <div class="text-[10px] text-emerald-700 font-semibold flex items-center justify-end gap-1">
                                 <i class="fa-light fa-gift text-[9px]"></i>
-                                <span>+Tip ${formatRupiah(claim.tip_amount)}</span>
+                                <span>+Pembulatan/Tip ${formatRupiah(claim.tip_amount)}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -2539,7 +2539,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (totalTipsEl) {
             const tips = summary.total_confirmed_tips !== undefined ? summary.total_confirmed_tips : 0;
             if (tips > 0) {
-                totalTipsEl.innerHTML = `<i class="fa-light fa-gift text-[9px]"></i> Tip: ${formatRupiah(tips)}`;
+                totalTipsEl.innerHTML = `<i class="fa-light fa-gift text-[9px]"></i> Pembulatan/Tip: ${formatRupiah(tips)}`;
                 totalTipsEl.classList.remove('hidden');
             } else {
                 totalTipsEl.classList.add('hidden');
@@ -3113,7 +3113,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const surplusBadge = document.getElementById('detailSurplusBadge');
         if (data.surplus > 0) {
             surplusBadge.classList.remove('hidden');
-            document.getElementById('detailSurplusText').innerText = `+${formatRupiah(data.surplus)} Tip / Extra`;
+            document.getElementById('detailSurplusText').innerText = `+${formatRupiah(data.surplus)} Pembulatan/Tip`;
         } else {
             surplusBadge.classList.add('hidden');
         }
@@ -3209,7 +3209,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (c.share_delivery > 0) text += `Proporsi Ongkir: +${formatRupiah(c.share_delivery)}\n`;
             if (c.share_service > 0) text += `Proporsi Layanan: +${formatRupiah(c.share_service)}\n`;
             if (c.share_discount > 0) text += `Proporsi Diskon: -${formatRupiah(c.share_discount)}\n`;
-            if (c.surplus > 0) text += `Tip / Pembulatan: +${formatRupiah(c.surplus)}\n`;
+            if (c.surplus > 0) text += `Pembulatan/Tip: +${formatRupiah(c.surplus)}\n`;
             text += `*TOTAL DIBAYAR: ${formatRupiah(c.amount)}*\n`;
 
             navigator.clipboard.writeText(text).then(() => {
