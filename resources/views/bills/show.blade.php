@@ -385,14 +385,48 @@
                      tabindex="0"
                      title="Klik untuk melihat rincian pembayaran {{ $claim->payer_name }}">
 
-                    <!-- Top Row: Name, Status & Amount -->
+                    <!-- Top Row: Name & Amount -->
                     <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2 flex-wrap min-w-0">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
                             <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-900 font-black text-xs flex items-center justify-center flex-shrink-0">
                                 {{ strtoupper(substr(trim($claim->payer_name), 0, 1)) }}
                             </div>
                             <span class="font-bold text-zinc-900 text-sm truncate">{{ $claim->payer_name }}</span>
+                        </div>
 
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <div class="text-right">
+                                <div class="text-sm sm:text-base font-extrabold text-emerald-900 tabular-nums">
+                                    Rp {{ number_format($claim->amount, 0, ',', '.') }}
+                                </div>
+                                @if(($claim->tip_amount ?? 0) > 0)
+                                    <div class="text-[10px] text-emerald-700 font-semibold flex items-center justify-end gap-1">
+                                        <i class="fa-light fa-gift text-[9px]"></i>
+                                        <span>+Pembulatan/Tip {{ $claim->formatted_tip_amount }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                            <i class="fa-light fa-chevron-right text-zinc-400 text-xs"></i>
+                        </div>
+                    </div>
+
+                    <!-- Middle Row: Clean Summary (Raw items hidden, click to open modal) -->
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-zinc-100 text-[11px] text-zinc-500">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <i class="fa-light fa-receipt text-zinc-400 text-[10px] flex-shrink-0"></i>
+                            <span class="truncate">{{ $claim->claimItems->count() }} jenis ({{ $claim->claimItems->sum('qty') }} item)</span>
+                            <span class="text-zinc-300 flex-shrink-0">&bull;</span>
+                            <span class="flex-shrink-0">{{ $claim->created_at->diffForHumans() }}</span>
+                        </div>
+                        <span class="text-emerald-700 font-semibold hover:underline flex items-center gap-1 flex-shrink-0">
+                            <span>Rincian</span>
+                            <i class="fa-light fa-arrow-up-right-from-square text-[9px]"></i>
+                        </span>
+                    </div>
+
+                    <!-- Bottom Row: Badges (Status & Payment Method) + Host Actions -->
+                    <div class="pt-2 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-1.5 flex-wrap min-w-0">
                             <!-- Status Badge -->
                             @if($claim->status === 'confirmed')
                                 <span class="claim-status-badge inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
@@ -425,60 +459,31 @@
                             @endif
                         </div>
 
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                            <div class="text-right">
-                                <div class="text-sm sm:text-base font-extrabold text-emerald-900 tabular-nums">
-                                    Rp {{ number_format($claim->amount, 0, ',', '.') }}
-                                </div>
-                                @if(($claim->tip_amount ?? 0) > 0)
-                                    <div class="text-[10px] text-emerald-700 font-semibold flex items-center justify-end gap-1">
-                                        <i class="fa-light fa-gift text-[9px]"></i>
-                                        <span>+Pembulatan & Tip {{ $claim->formatted_tip_amount }}</span>
-                                    </div>
+                        <!-- Host Actions: If viewer is Host and claim is pending (or allow reject) -->
+                        @if($isHost)
+                            <div class="host-actions-row flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation()">
+                                @if($claim->status === 'pending')
+                                    <button type="button"
+                                            class="btn-confirm-claim touch-target px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                                            data-claim-id="{{ $claim->id }}"
+                                            data-name="{{ $claim->payer_name }}"
+                                            data-amount="Rp {{ number_format($claim->amount, 0, ',', '.') }}">
+                                        <i class="fa-light fa-check text-xs"></i>
+                                        <span>Konfirmasi Dana Masuk</span>
+                                    </button>
                                 @endif
-                            </div>
-                            <i class="fa-light fa-chevron-right text-zinc-400 text-xs"></i>
-                        </div>
-                    </div>
 
-                    <!-- Bottom Row: Clean Summary (Raw items hidden, click to open modal) -->
-                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-zinc-100 text-[11px] text-zinc-500">
-                        <div class="flex items-center gap-1.5">
-                            <i class="fa-light fa-receipt text-zinc-400 text-[10px]"></i>
-                            <span>{{ $claim->claimItems->count() }} jenis ({{ $claim->claimItems->sum('qty') }} item)</span>
-                            <span class="text-zinc-300">&bull;</span>
-                            <span>{{ $claim->created_at->diffForHumans() }}</span>
-                        </div>
-                        <span class="text-emerald-700 font-semibold hover:underline flex items-center gap-1">
-                            <span>Rincian</span>
-                            <i class="fa-light fa-arrow-up-right-from-square text-[9px]"></i>
-                        </span>
-                    </div>
-
-                    <!-- Host Actions: If viewer is Host and claim is pending (or allow reject) -->
-                    @if($isHost)
-                        <div class="host-actions-row pt-2 border-t border-zinc-100 flex items-center justify-end gap-2" onclick="event.stopPropagation()">
-                            @if($claim->status === 'pending')
                                 <button type="button"
-                                        class="btn-confirm-claim touch-target px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                                        class="btn-reject-claim touch-target p-1.5 px-2.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer text-xs font-semibold inline-flex items-center gap-1"
                                         data-claim-id="{{ $claim->id }}"
                                         data-name="{{ $claim->payer_name }}"
-                                        data-amount="Rp {{ number_format($claim->amount, 0, ',', '.') }}">
-                                    <i class="fa-light fa-check text-xs"></i>
-                                    <span>Konfirmasi Dana Masuk</span>
+                                        title="Tolak / Hapus Klaim">
+                                    <i class="fa-light fa-trash-can text-xs"></i>
+                                    <span class="hidden sm:inline">Tolak</span>
                                 </button>
-                            @endif
-
-                            <button type="button"
-                                    class="btn-reject-claim touch-target p-1.5 px-2.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer text-xs font-semibold inline-flex items-center gap-1"
-                                    data-claim-id="{{ $claim->id }}"
-                                    data-name="{{ $claim->payer_name }}"
-                                    title="Tolak / Hapus Klaim">
-                                <i class="fa-light fa-trash-can text-xs"></i>
-                                <span class="hidden sm:inline">Tolak</span>
-                            </button>
-                        </div>
-                    @endif
+                            </div>
+                        @endif
+                    </div>
                 </div>
             @endforeach
         </div>
@@ -2208,7 +2213,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let hostActionsHtml = '';
         if (isHost) {
             hostActionsHtml = `
-                <div class="host-actions-row pt-2 border-t border-zinc-100 flex items-center justify-end gap-2" onclick="event.stopPropagation()">
+                <div class="host-actions-row flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation()">
                     <button type="button"
                             class="btn-confirm-claim touch-target px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
                             data-claim-id="${claim.id}"
@@ -2238,16 +2243,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         card.innerHTML = `
             <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2 flex-wrap min-w-0">
+                <div class="flex items-center gap-2 min-w-0 flex-1">
                     <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-900 font-black text-xs flex items-center justify-center flex-shrink-0">
                         ${initial}
                     </div>
                     <span class="font-bold text-zinc-900 text-sm truncate">${claim.payer_name}</span>
-                    <span class="claim-status-badge inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/70 animate-pulse">
-                        <i class="fa-light fa-hourglass-clock text-amber-600"></i>
-                        <span>Menunggu Konfirmasi Host</span>
-                    </span>
-                    ${methodBadge}
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <div class="text-right">
@@ -2257,7 +2257,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         ${(claim.tip_amount && claim.tip_amount > 0) ? `
                             <div class="text-[10px] text-emerald-700 font-semibold flex items-center justify-end gap-1">
                                 <i class="fa-light fa-gift text-[9px]"></i>
-                                <span>+Pembulatan & Tip ${formatRupiah(claim.tip_amount)}</span>
+                                <span>+Pembulatan/Tip ${formatRupiah(claim.tip_amount)}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -2265,18 +2265,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             </div>
             <div class="flex items-center justify-between gap-2 pt-2 border-t border-zinc-100 text-[11px] text-zinc-500">
-                <div class="flex items-center gap-1.5">
-                    <i class="fa-light fa-receipt text-zinc-400 text-[10px]"></i>
-                    <span>${claim.items_count || 1} jenis (${claim.items_total_qty || 1} item)</span>
-                    <span class="text-zinc-300">&bull;</span>
-                    <span>Baru saja</span>
+                <div class="flex items-center gap-1.5 min-w-0">
+                    <i class="fa-light fa-receipt text-zinc-400 text-[10px] flex-shrink-0"></i>
+                    <span class="truncate">${claim.items_count || 1} jenis (${claim.items_total_qty || 1} item)</span>
+                    <span class="text-zinc-300 flex-shrink-0">&bull;</span>
+                    <span class="flex-shrink-0">Baru saja</span>
                 </div>
-                <span class="text-emerald-700 font-semibold hover:underline flex items-center gap-1">
+                <span class="text-emerald-700 font-semibold hover:underline flex items-center gap-1 flex-shrink-0">
                     <span>Rincian</span>
                     <i class="fa-light fa-arrow-up-right-from-square text-[9px]"></i>
                 </span>
             </div>
-            ${hostActionsHtml}
+            <div class="pt-2 border-t border-zinc-100 flex items-center justify-between gap-2 flex-wrap">
+                <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                    <span class="claim-status-badge inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/70 animate-pulse">
+                        <i class="fa-light fa-hourglass-clock text-amber-600"></i>
+                        <span>Menunggu Konfirmasi Host</span>
+                    </span>
+                    ${methodBadge}
+                </div>
+                ${hostActionsHtml}
+            </div>
         `;
 
         card.addEventListener('click', function () {
