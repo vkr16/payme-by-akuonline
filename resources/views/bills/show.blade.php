@@ -1174,6 +1174,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }).format(val));
     }
 
+    function round2(val) {
+        return Math.round((Number(val) + Number.EPSILON) * 100) / 100;
+    }
+
     // Collect currently selected items: { [item_id]: qty }
     function getSelectedItems() {
         const items = {};
@@ -1314,7 +1318,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (partPercentage) {
                     partPercentage.textContent = (data.proportion_percent || 0) + '%';
                 }
-                partFeeShare.textContent = formatRupiah(data.fee_share + data.discount_share);
+                partFeeShare.textContent = formatRupiah(round2((data.delivery_fee_share || 0) + (data.service_fee_share || 0)));
                 partDiscountShare.textContent = '-' + formatRupiah(data.discount_share);
 
                 if (roundUp && data.round_up_extra > 0) {
@@ -1772,9 +1776,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updateTipBreakdownUI(enteredAmount, exact) {
-        const roundUpExtra = Math.round(lastCalculatedData?.round_up_extra || 0);
+        const roundUpExtra = parseFloat(lastCalculatedData?.round_up_extra || 0);
         const tipExtra = (enteredAmount && enteredAmount > exact) ? (enteredAmount - exact) : 0;
-        const totalExtra = roundUpExtra + tipExtra;
+        const totalExtra = round2(roundUpExtra + tipExtra);
 
         if (claimModalRowRoundUp && claimModalBreakdownRoundUp) {
             if (totalExtra > 0) {
@@ -2493,8 +2497,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
+            let normalizedConfirmedTotal = confirmedBillTotal;
             if (allItemsConfirmed && (remaining <= 0.05 || totalCollectedWithTips >= grandTotal)) {
                 remaining = 0;
+                normalizedConfirmedTotal = grandTotal;
             }
 
             const isFullySettled = confirmedBillTotal > 0
@@ -2502,10 +2508,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 && pendingClaims.length === 0
                 && allItemsConfirmed;
 
+            const finalPct = isFullySettled ? 100 : pct;
+
             summary = {
-                total_confirmed_paid: confirmedBillTotal,
+                total_confirmed_paid: normalizedConfirmedTotal,
                 total_confirmed_tips: confirmedTipsTotal,
-                progress_percentage: pct,
+                progress_percentage: finalPct,
                 remaining_confirmed_amount: remaining,
                 is_fully_settled: isFullySettled,
                 total_claims_count: claims.length,

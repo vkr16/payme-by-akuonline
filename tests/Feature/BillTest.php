@@ -1111,4 +1111,147 @@ class BillTest extends TestCase
         $this->assertEquals(0, $freshBill->remaining_confirmed_amount);
         $this->assertTrue($freshBill->isFullySettled());
     }
+
+    public function test_component_first_two_decimal_rounding_eliminates_discrepancy_for_user_scenario(): void
+    {
+        $bill = Bill::factory()->create([
+            'delivery_fee' => 4.73,
+            'service_fee' => 2.82,
+            'discount' => 9.49,
+        ]);
+
+        $item1 = BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'name' => 'Menu 1',
+            'price' => 1000,
+            'qty' => 1,
+        ]);
+
+        BillItem::factory()->create([
+            'bill_id' => $bill->id,
+            'name' => 'Menu 2',
+            'price' => 9000,
+            'qty' => 1,
+        ]);
+
+        // Proportion for item1 is 1000 / 10000 = 0.1
+        // delivery_fee_share = round(0.1 * 4.73, 2) = 0.47
+        // service_fee_share = round(0.1 * 2.82, 2) = 0.28
+        // discount_share = round(0.1 * 9.49, 2) = 0.95
+        // Component-first net fee = 0.47 + 0.28 - 0.95 = -0.20
+        // exact_payable = 1000 - 0.20 = 999.80
+        // roundedUpPayable = ceil(999.80) = 1000
+        // round_up_extra = 1000 - 999.80 = 0.20 (NOT 0.19!)
+        $calcResponse = $this->postJson('/b/'.$bill->slug.'/calculate', [
+            'items' => [$item1->id => 1],
+            'round_up' => false,
+        ]);
+
+        $calcResponse->assertStatus(200);
+        $calcResponse->assertJson([
+            'success' => true,
+            'items_subtotal' => 1000,
+            'delivery_fee_share' => 0.47,
+            'service_fee_share' => 0.28,
+            'discount_share' => 0.95,
+            'fee_share' => -0.20,
+            'exact_payable' => 999.80,
+            'total_payable' => 1000,
+            'round_up_extra' => 0.20,
+        ]);
+
+        // Submit claim
+        $claimResponse = $this->postJson('/b/'.$bill->slug.'/claim', [
+            'payer_name' => 'Budi User Scenario',
+            'payment_method' => 'qris',
+            'round_up' => false,
+            'items' => [$item1->id => 1],
+        ]);
+
+        $claimResponse->assertStatus(200);
+        $claimResponse->assertJson([
+            'success' => true,
+            'amount' => 1000,
+            'claim_data' => [
+                'payer_name' => 'Budi User Scenario',
+                'amount' => 1000,
+                'bill_amount' => 999.80,
+                'tip_amount' => 0.20,
+                'share_delivery' => 0.47,
+                'share_service' => 0.28,
+                'share_discount' => 0.95,
+                'fee_share' => -0.20,
+                'exact_payable' => 999.80,
+                'has_tip' => true,
+            ],
+        ]);
+
+        $claim = BillClaim::where('bill_id', $bill->id)->first();
+        $this->assertNotNull($claim);
+        $this->assertEquals(999.80, (float) $claim->bill_amount);
+        $this->assertEquals(0.20, (float) $claim->tip_amount);
+        $this->assertEquals(999.80, (float) $claim->exact_payable);
+
+        // Verify the mathematical identity: subtotal + deliv + serv - disc + tip == amount
+        $detail = $claim->toDetailArray();
+        $balancedSum = $detail['items_subtotal']
+            + $detail['share_delivery']
+            + $detail['share_service']
+            - $detail['share_discount']
+            + $detail['tip_amount'];
+        $this->assertEquals(1000.00, round($balancedSum, 2));
+    }
+
+    public function test_multi_participant_split_penny_remainder_normalizes_to_grand_total_when_fully_settled(): void
+    {
+        $host = User::factory()->create();
+        $bill = Bill::factory()->create([
+            'user_id' => $host->id,
+            'delivery_fee' => 10000,
+            'service_fee' => 1000,
+            'discount' => 0,
+        ]);
+
+        $item1 = BillItem::factory()->create(['bill_id' => $bill->id, 'price' => 15000, 'qty' => 1]);
+        $item2 = BillItem::factory()->create(['bill_id' => $bill->id, 'price' => 15000, 'qty' => 1]);
+        $item3 = BillItem::factory()->create(['bill_id' => $bill->id, 'price' => 15000, 'qty' => 1]);
+
+        $this->postJson('/b/'.$bill->slug.'/claim', [
+            'payer_name' => 'Kawan 1',
+            'payment_method' => 'qris',
+            'items' => [$item1->id => 1],
+        ])->assertStatus(200);
+
+        $this->postJson('/b/'.$bill->slug.'/claim', [
+            'payer_name' => 'Kawan 2',
+            'payment_method' => 'qris',
+            'items' => [$item2->id => 1],
+        ])->assertStatus(200);
+
+        $this->postJson('/b/'.$bill->slug.'/claim', [
+            'payer_name' => 'Kawan 3',
+            'payment_method' => 'qris',
+            'items' => [$item3->id => 1],
+        ])->assertStatus(200);
+
+        $claims = $bill->claims()->get();
+        $this->actingAs($host)->postJson("/b/{$bill->slug}/claims/batch-confirm", [
+            'claim_ids' => $claims->pluck('id')->toArray(),
+        ])->assertStatus(200);
+
+        $freshBill = $bill->fresh();
+        // Grand total is 56,000.
+        // Normalized total confirmed paid must be exactly 56,000 (not 55,999.99)
+        $this->assertEquals(56000, $freshBill->grand_total);
+        $this->assertEquals(56000, $freshBill->total_confirmed_paid);
+        $this->assertEquals(0, $freshBill->remaining_confirmed_amount);
+        $this->assertEquals(100.0, $freshBill->progress_percentage);
+        $this->assertTrue($freshBill->isFullySettled());
+
+        $summary = $freshBill->getSummaryArray();
+        $this->assertEquals(56000, $summary['total_confirmed_paid']);
+        $this->assertEquals(0, $summary['remaining_confirmed_amount']);
+        $this->assertEquals(100.0, $summary['progress_percentage']);
+        $this->assertTrue($summary['is_fully_settled']);
+    }
 }

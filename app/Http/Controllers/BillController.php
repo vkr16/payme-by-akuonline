@@ -302,20 +302,19 @@ class BillController extends Controller
 
         if ($totalBillSubtotal > 0 && $itemsSubtotal > 0) {
             $proportion = $itemsSubtotal / $totalBillSubtotal;
-            $netExtraFees = (float) $bill->net_extra_fees;
             $deliveryFeeShare = (float) round($proportion * (float) $bill->delivery_fee, 2);
             $serviceFeeShare = (float) round($proportion * (float) $bill->service_fee, 2);
             $discountShare = (float) round($proportion * (float) $bill->discount, 2);
-            $feeShare = (float) round($proportion * $netExtraFees, 2);
+            $feeShare = (float) round($deliveryFeeShare + $serviceFeeShare - $discountShare, 2);
         }
 
         $exactPayable = (float) max(0, round($itemsSubtotal + $feeShare, 2));
-        $roundedUpPayable = (float) ceil($exactPayable);
+        $roundedUpPayable = (float) ceil(round($exactPayable, 2));
         $totalPayable = $roundedUpPayable;
         $roundUpExtra = 0.0;
 
         if ($roundUp && $exactPayable > 0) {
-            $rounded = (float) (ceil($exactPayable / 1000) * 1000);
+            $rounded = (float) (ceil(round($exactPayable / 1000, 4)) * 1000);
             $roundUpExtra = (float) max(0, round($rounded - $exactPayable, 2));
             $totalPayable = $rounded;
         } else {
@@ -408,19 +407,18 @@ class BillController extends Controller
 
         if ($totalBillSubtotal > 0 && $itemsSubtotal > 0) {
             $proportion = $itemsSubtotal / $totalBillSubtotal;
-            $netExtraFees = (float) $bill->net_extra_fees;
             $deliveryFeeShare = (float) round($proportion * (float) $bill->delivery_fee, 2);
             $serviceFeeShare = (float) round($proportion * (float) $bill->service_fee, 2);
             $discountShare = (float) round($proportion * (float) $bill->discount, 2);
-            $feeShare = (float) round($proportion * $netExtraFees, 2);
+            $feeShare = (float) round($deliveryFeeShare + $serviceFeeShare - $discountShare, 2);
         }
 
         $exactPaid = (float) max(0, round($itemsSubtotal + $feeShare, 2));
-        $roundedUpPayable = (float) ceil($exactPaid);
+        $roundedUpPayable = (float) ceil(round($exactPaid, 2));
         $totalPaid = $roundedUpPayable;
 
         if ($request->filled('actual_amount')) {
-            $customActual = (float) $request->input('actual_amount');
+            $customActual = (float) round((float) $request->input('actual_amount'), 2);
             if ($customActual < $exactPaid) {
                 return response()->json([
                     'success' => false,
@@ -429,7 +427,7 @@ class BillController extends Controller
             }
             $totalPaid = $customActual;
         } elseif ($roundUp && $exactPaid > 0) {
-            $totalPaid = (float) (ceil($exactPaid / 1000) * 1000);
+            $totalPaid = (float) (ceil(round($exactPaid / 1000, 4)) * 1000);
         }
 
         $billAmount = (float) min($totalPaid, $exactPaid);

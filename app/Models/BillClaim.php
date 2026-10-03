@@ -84,13 +84,15 @@ class BillClaim extends Model
             }
         }
 
-        $totalBillSubtotal = $bill->items_subtotal;
-        $netExtraFees = $bill->net_extra_fees;
+        $totalBillSubtotal = (float) $bill->items_subtotal;
 
         $feeShare = 0.0;
         if ($totalBillSubtotal > 0 && $itemsSubtotal > 0) {
             $proportion = $itemsSubtotal / $totalBillSubtotal;
-            $feeShare = $proportion * $netExtraFees;
+            $delivShare = (float) round($proportion * (float) $bill->delivery_fee, 2);
+            $servShare = (float) round($proportion * (float) $bill->service_fee, 2);
+            $discShare = (float) round($proportion * (float) $bill->discount, 2);
+            $feeShare = (float) round($delivShare + $servShare - $discShare, 2);
         }
 
         return (float) max(0, round($itemsSubtotal + $feeShare, 2));
@@ -154,14 +156,15 @@ class BillClaim extends Model
         $prop = $totBillSubtotal > 0 ? ($itemsSubtotal / $totBillSubtotal) : 0;
         $propPercent = round($prop * 100, 1);
 
-        $shareDeliv = round($prop * (float) ($bill?->delivery_fee ?? 0), 2);
-        $shareServ = round($prop * (float) ($bill?->service_fee ?? 0), 2);
-        $shareDisc = round($prop * (float) ($bill?->discount ?? 0), 2);
+        $shareDeliv = (float) round($prop * (float) ($bill?->delivery_fee ?? 0), 2);
+        $shareServ = (float) round($prop * (float) ($bill?->service_fee ?? 0), 2);
+        $shareDisc = (float) round($prop * (float) ($bill?->discount ?? 0), 2);
+        $feeShare = (float) round($shareDeliv + $shareServ - $shareDisc, 2);
 
         $amountPaid = (float) $this->amount;
         $exactPayable = (float) $this->exact_payable;
         $billAmount = (float) ($this->bill_amount > 0 ? $this->bill_amount : min($amountPaid, $exactPayable));
-        $tipAmount = (float) ($this->tip_amount > 0 ? $this->tip_amount : $this->surplus);
+        $tipAmount = (float) ($this->tip_amount > 0 ? $this->tip_amount : max(0, round($amountPaid - $billAmount, 2)));
 
         return [
             'id' => $this->id,
@@ -183,6 +186,7 @@ class BillClaim extends Model
             'share_delivery' => $shareDeliv,
             'share_service' => $shareServ,
             'share_discount' => $shareDisc,
+            'fee_share' => $feeShare,
             'exact_payable' => $exactPayable,
             'surplus' => $tipAmount,
         ];

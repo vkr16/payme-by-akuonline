@@ -77,9 +77,9 @@ class Bill extends Model
      */
     public function getItemsSubtotalAttribute(): float
     {
-        return (float) $this->items->sum(function ($item) {
-            return (float) $item->price * (int) $item->qty;
-        });
+        return (float) round($this->items->sum(function ($item) {
+            return round((float) $item->price * (int) $item->qty, 2);
+        }), 2);
     }
 
     /**
@@ -87,7 +87,7 @@ class Bill extends Model
      */
     public function getNetExtraFeesAttribute(): float
     {
-        return (float) ($this->delivery_fee + $this->service_fee - $this->discount);
+        return (float) round((float) $this->delivery_fee + (float) $this->service_fee - (float) $this->discount, 2);
     }
 
     /**
@@ -95,7 +95,7 @@ class Bill extends Model
      */
     public function getGrandTotalAttribute(): float
     {
-        return max(0, $this->items_subtotal + $this->net_extra_fees);
+        return (float) max(0, round($this->items_subtotal + $this->net_extra_fees, 2));
     }
 
     /**
@@ -117,12 +117,32 @@ class Bill extends Model
         };
 
         if ($this->relationLoaded('claims')) {
-            return (float) $this->claims->where('status', 'confirmed')->sum($resolveClaimBillAmount);
+            $confirmedSum = (float) $this->claims->where('status', 'confirmed')->sum($resolveClaimBillAmount);
+        } else {
+            $claims = $this->claims()->where('status', 'confirmed')->get();
+            $confirmedSum = (float) $claims->sum($resolveClaimBillAmount);
         }
 
-        $claims = $this->claims()->where('status', 'confirmed')->get();
+        $confirmedSum = (float) round($confirmedSum, 2);
 
-        return (float) $claims->sum($resolveClaimBillAmount);
+        // Normalize penny allocation remainder when all items are fully confirmed
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+        $allItemsConfirmed = $items->isNotEmpty();
+        foreach ($items as $item) {
+            if ($item->confirmed_claimed_qty < $item->qty) {
+                $allItemsConfirmed = false;
+                break;
+            }
+        }
+
+        if ($allItemsConfirmed) {
+            $diff = abs($this->grand_total - $confirmedSum);
+            if ($diff <= 0.05) {
+                return (float) $this->grand_total;
+            }
+        }
+
+        return $confirmedSum;
     }
 
     /**
@@ -139,12 +159,12 @@ class Bill extends Model
         };
 
         if ($this->relationLoaded('claims')) {
-            return (float) $this->claims->where('status', 'confirmed')->sum($resolveClaimTipAmount);
+            return (float) round($this->claims->where('status', 'confirmed')->sum($resolveClaimTipAmount), 2);
         }
 
         $claims = $this->claims()->where('status', 'confirmed')->get();
 
-        return (float) $claims->sum($resolveClaimTipAmount);
+        return (float) round($claims->sum($resolveClaimTipAmount), 2);
     }
 
     /**
@@ -160,7 +180,7 @@ class Bill extends Model
      */
     public function getRemainingConfirmedAmountAttribute(): float
     {
-        $remaining = (float) max(0, $this->grand_total - $this->total_confirmed_paid);
+        $remaining = (float) max(0, round($this->grand_total - $this->total_confirmed_paid, 2));
 
         $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
         $allItemsConfirmed = $items->isNotEmpty();
