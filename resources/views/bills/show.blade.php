@@ -260,40 +260,40 @@
         <div class="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-2 text-xs">
             <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Kalkulasi Bagianmu</span>
 
-            <div class="flex justify-between text-zinc-600">
-                <span>Subtotal Item Terpilih:</span>
-                <span id="partSubtotal" class="font-bold text-zinc-900 tabular-nums">Rp 0</span>
+            <div class="flex justify-between items-center gap-2 text-zinc-600">
+                <span class="truncate">Subtotal Item Terpilih:</span>
+                <span id="partSubtotal" class="font-bold text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
             </div>
 
-            <div class="flex justify-between text-zinc-500">
-                <span class="flex items-center gap-1">
-                    <i class="fa-light fa-chart-pie text-[10px] text-emerald-700"></i> Porsi Belanja dari Total Tagihan:
+            <div class="flex justify-between items-center gap-2 text-zinc-500">
+                <span class="flex items-center gap-1 truncate">
+                    <i class="fa-light fa-chart-pie text-[10px] text-emerald-700 flex-shrink-0"></i> <span class="truncate">Porsi Belanja dari Total Tagihan:</span>
                 </span>
-                <span id="partPercentage" class="font-bold text-emerald-800 tabular-nums">0%</span>
+                <span id="partPercentage" class="font-bold text-emerald-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right">0%</span>
             </div>
 
-            <div class="flex justify-between text-zinc-600">
-                <span>Alokasi Ongkir & Layanan:</span>
-                <span id="partFeeShare" class="font-medium text-zinc-900 tabular-nums">Rp 0</span>
+            <div class="flex justify-between items-center gap-2 text-zinc-600">
+                <span class="truncate">Alokasi Ongkir & Layanan:</span>
+                <span id="partFeeShare" class="font-medium text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
             </div>
 
-            <div class="flex justify-between text-emerald-700">
-                <span>Alokasi Potongan Diskon:</span>
-                <span id="partDiscountShare" class="font-bold tabular-nums">-Rp 0</span>
+            <div class="flex justify-between items-center gap-2 text-emerald-700">
+                <span class="truncate">Alokasi Potongan Diskon:</span>
+                <span id="partDiscountShare" class="font-bold tabular-nums flex-shrink-0 whitespace-nowrap text-right">-Rp 0</span>
             </div>
 
             <!-- Tip / Bulatkan ke atas Toggle -->
-            <div class="pt-2 border-t border-zinc-200/80 flex items-center justify-between">
-                <label class="flex items-center gap-2 cursor-pointer select-none">
-                    <input type="checkbox" id="partRoundUp" class="w-4 h-4 rounded border-zinc-300 text-emerald-800 focus:ring-emerald-700 cursor-pointer accent-emerald-800" autocomplete="off">
-                    <span class="text-xs text-zinc-700 font-medium">Bulatkan sebagai tip</span>
+            <div class="pt-2 border-t border-zinc-200/80 flex items-center justify-between gap-2">
+                <label class="flex items-center gap-2 cursor-pointer select-none min-w-0">
+                    <input type="checkbox" id="partRoundUp" class="w-4 h-4 rounded border-zinc-300 text-emerald-800 focus:ring-emerald-700 cursor-pointer accent-emerald-800 flex-shrink-0" autocomplete="off">
+                    <span class="text-xs text-zinc-700 font-medium truncate">Bulatkan sebagai tip</span>
                 </label>
-                <span id="partRoundUpBadge" class="hidden text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">+Rp 0</span>
+                <span id="partRoundUpBadge" class="hidden text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap">+Rp 0</span>
             </div>
 
-            <div class="pt-2.5 border-t border-zinc-200 flex justify-between items-center text-sm font-bold text-zinc-900">
-                <span>Total yang Harus Kamu Bayar:</span>
-                <span id="partGrandTotal" class="text-base sm:text-lg font-black text-emerald-900 tabular-nums">Rp 0</span>
+            <div class="pt-2.5 border-t border-zinc-200 flex justify-between items-center gap-2 text-sm font-bold text-zinc-900">
+                <span class="truncate">Total yang Harus Kamu Bayar:</span>
+                <span id="partGrandTotal" class="text-base sm:text-lg font-black text-emerald-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right">Rp 0</span>
             </div>
         </div>
 
@@ -628,29 +628,29 @@
 
                     <!-- Breakdown Proporsi Biaya -->
                     <div class="p-2.5 rounded-xl bg-white border border-zinc-200/70 space-y-1.5 text-xs">
-                        <div class="flex justify-between text-zinc-600">
-                            <span>Subtotal Item:</span>
-                            <span class="font-bold text-zinc-800 tabular-nums" id="payModalBreakdownSubtotal">Rp 0</span>
+                        <div class="flex justify-between items-center gap-2 text-zinc-600">
+                            <span class="truncate">Subtotal Item:</span>
+                            <span class="font-bold text-zinc-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="payModalBreakdownSubtotal">Rp 0</span>
                         </div>
-                        <div class="hidden justify-between text-zinc-600" id="payModalRowDelivery">
-                            <span>Proporsi Ongkir:</span>
-                            <span class="font-bold text-zinc-800 tabular-nums" id="payModalBreakdownDelivery">+Rp 0</span>
+                        <div class="hidden justify-between items-center gap-2 text-zinc-600" id="payModalRowDelivery">
+                            <span class="truncate">Proporsi Ongkir:</span>
+                            <span class="font-bold text-zinc-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="payModalBreakdownDelivery">+Rp 0</span>
                         </div>
-                        <div class="hidden justify-between text-zinc-600" id="payModalRowService">
-                            <span>Proporsi Layanan/Pajak:</span>
-                            <span class="font-bold text-zinc-800 tabular-nums" id="payModalBreakdownService">+Rp 0</span>
+                        <div class="hidden justify-between items-center gap-2 text-zinc-600" id="payModalRowService">
+                            <span class="truncate">Proporsi Layanan/Pajak:</span>
+                            <span class="font-bold text-zinc-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="payModalBreakdownService">+Rp 0</span>
                         </div>
-                        <div class="hidden justify-between text-emerald-700" id="payModalRowDiscount">
-                            <span>Proporsi Diskon:</span>
-                            <span class="font-bold text-emerald-800 tabular-nums" id="payModalBreakdownDiscount">-Rp 0</span>
+                        <div class="hidden justify-between items-center gap-2 text-emerald-700" id="payModalRowDiscount">
+                            <span class="truncate">Proporsi Diskon:</span>
+                            <span class="font-bold text-emerald-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="payModalBreakdownDiscount">-Rp 0</span>
                         </div>
-                        <div class="hidden justify-between text-emerald-700" id="payModalRowRoundUp">
-                            <span>Pembulatan:</span>
-                            <span class="font-bold text-emerald-800 tabular-nums" id="payModalBreakdownRoundUp">+Rp 0</span>
+                        <div class="hidden justify-between items-center gap-2 text-emerald-700" id="payModalRowRoundUp">
+                            <span class="truncate">Pembulatan:</span>
+                            <span class="font-bold text-emerald-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="payModalBreakdownRoundUp">+Rp 0</span>
                         </div>
-                        <div class="pt-1.5 border-t border-zinc-200 flex justify-between font-black text-zinc-900 text-xs">
-                            <span>Total Tagihan Pokok:</span>
-                            <span class="text-emerald-900 tabular-nums font-black" id="payModalBreakdownTotal">Rp 0</span>
+                        <div class="pt-1.5 border-t border-zinc-200 flex justify-between items-center gap-2 font-black text-zinc-900 text-xs">
+                            <span class="truncate">Total Tagihan Pokok:</span>
+                            <span class="text-emerald-900 tabular-nums font-black flex-shrink-0 whitespace-nowrap text-right" id="payModalBreakdownTotal">Rp 0</span>
                         </div>
                     </div>
                 </div>
@@ -773,29 +773,29 @@
 
                         <!-- Cost Breakdown -->
                         <div class="p-2.5 rounded-lg bg-white border border-zinc-200/70 space-y-1 text-xs">
-                            <div class="flex justify-between text-zinc-600">
-                                <span>Subtotal Item:</span>
-                                <span class="font-semibold text-zinc-800 tabular-nums" id="claimModalBreakdownSubtotal">Rp 0</span>
+                            <div class="flex justify-between items-center gap-2 text-zinc-600">
+                                <span class="truncate">Subtotal Item:</span>
+                                <span class="font-semibold text-zinc-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="claimModalBreakdownSubtotal">Rp 0</span>
                             </div>
-                            <div class="hidden justify-between text-zinc-600" id="claimModalRowDelivery">
-                                <span>Proporsi Ongkir:</span>
-                                <span class="font-semibold text-zinc-800 tabular-nums" id="claimModalBreakdownDelivery">+Rp 0</span>
+                            <div class="hidden justify-between items-center gap-2 text-zinc-600" id="claimModalRowDelivery">
+                                <span class="truncate">Proporsi Ongkir:</span>
+                                <span class="font-semibold text-zinc-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="claimModalBreakdownDelivery">+Rp 0</span>
                             </div>
-                            <div class="hidden justify-between text-zinc-600" id="claimModalRowService">
-                                <span>Proporsi Layanan/Pajak:</span>
-                                <span class="font-semibold text-zinc-800 tabular-nums" id="claimModalBreakdownService">+Rp 0</span>
+                            <div class="hidden justify-between items-center gap-2 text-zinc-600" id="claimModalRowService">
+                                <span class="truncate">Proporsi Layanan/Pajak:</span>
+                                <span class="font-semibold text-zinc-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="claimModalBreakdownService">+Rp 0</span>
                             </div>
-                            <div class="hidden justify-between text-emerald-700" id="claimModalRowDiscount">
-                                <span>Proporsi Diskon:</span>
-                                <span class="font-semibold text-emerald-800 tabular-nums" id="claimModalBreakdownDiscount">-Rp 0</span>
+                            <div class="hidden justify-between items-center gap-2 text-emerald-700" id="claimModalRowDiscount">
+                                <span class="truncate">Proporsi Diskon:</span>
+                                <span class="font-semibold text-emerald-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="claimModalBreakdownDiscount">-Rp 0</span>
                             </div>
-                            <div class="hidden justify-between text-emerald-700" id="claimModalRowRoundUp">
-                                <span>Pembulatan/Tip:</span>
-                                <span class="font-semibold text-emerald-800 tabular-nums" id="claimModalBreakdownRoundUp">+Rp 0</span>
+                            <div class="hidden justify-between items-center gap-2 text-emerald-700" id="claimModalRowRoundUp">
+                                <span class="truncate">Pembulatan/Tip:</span>
+                                <span class="font-semibold text-emerald-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="claimModalBreakdownRoundUp">+Rp 0</span>
                             </div>
-                            <div class="pt-1.5 border-t border-zinc-200 flex justify-between font-bold text-zinc-900 text-xs">
-                                <span>Total Ditransfer:</span>
-                                <span class="tabular-nums font-bold text-zinc-900" id="claimModalBreakdownTotal">Rp 0</span>
+                            <div class="pt-1.5 border-t border-zinc-200 flex justify-between items-center gap-2 font-bold text-zinc-900 text-xs">
+                                <span class="truncate">Total Ditransfer:</span>
+                                <span class="tabular-nums font-bold text-zinc-900 flex-shrink-0 whitespace-nowrap text-right" id="claimModalBreakdownTotal">Rp 0</span>
                             </div>
                         </div>
                     </div>
@@ -899,29 +899,29 @@
             <span class="font-bold text-zinc-800 block text-xs mb-1">
                 <i class="fa-light fa-calculator text-emerald-700 mr-1"></i> Rincian Pembagian Biaya
             </span>
-            <div class="flex justify-between text-zinc-600">
-                <span>Subtotal Item:</span>
-                <span class="font-semibold text-zinc-900 tabular-nums" id="detailItemsSubtotal">Rp 0</span>
+            <div class="flex justify-between items-center gap-2 text-zinc-600">
+                <span class="truncate">Subtotal Item:</span>
+                <span class="font-semibold text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="detailItemsSubtotal">Rp 0</span>
             </div>
-            <div class="flex justify-between text-zinc-600 hidden" id="detailRowDelivery">
-                <span>Proporsi Ongkir:</span>
-                <span class="font-semibold text-zinc-900 tabular-nums" id="detailShareDelivery">+Rp 0</span>
+            <div class="flex justify-between items-center gap-2 text-zinc-600 hidden" id="detailRowDelivery">
+                <span class="truncate">Proporsi Ongkir:</span>
+                <span class="font-semibold text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="detailShareDelivery">+Rp 0</span>
             </div>
-            <div class="flex justify-between text-zinc-600 hidden" id="detailRowService">
-                <span>Proporsi Biaya Layanan:</span>
-                <span class="font-semibold text-zinc-900 tabular-nums" id="detailShareService">+Rp 0</span>
+            <div class="flex justify-between items-center gap-2 text-zinc-600 hidden" id="detailRowService">
+                <span class="truncate">Proporsi Biaya Layanan:</span>
+                <span class="font-semibold text-zinc-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="detailShareService">+Rp 0</span>
             </div>
-            <div class="flex justify-between text-emerald-700 hidden" id="detailRowDiscount">
-                <span>Proporsi Diskon:</span>
-                <span class="font-bold tabular-nums" id="detailShareDiscount">-Rp 0</span>
+            <div class="flex justify-between items-center gap-2 text-emerald-700 hidden" id="detailRowDiscount">
+                <span class="truncate">Proporsi Diskon:</span>
+                <span class="font-bold tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="detailShareDiscount">-Rp 0</span>
             </div>
-            <div class="flex justify-between text-zinc-600 hidden" id="detailRowSurplus">
-                <span>Tip / Pembulatan ke Atas:</span>
-                <span class="font-semibold text-emerald-800 tabular-nums" id="detailShareSurplus">+Rp 0</span>
+            <div class="flex justify-between items-center gap-2 text-zinc-600 hidden" id="detailRowSurplus">
+                <span class="truncate">Pembulatan/Tip:</span>
+                <span class="font-semibold text-emerald-800 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="detailShareSurplus">+Rp 0</span>
             </div>
-            <div class="pt-2 border-t border-zinc-200/90 flex justify-between font-bold text-zinc-900 text-sm">
+            <div class="pt-2 border-t border-zinc-200/90 flex justify-between items-center gap-2 font-bold text-zinc-900 text-sm">
                 <span>Total Dibayarkan:</span>
-                <span class="font-black text-emerald-900 tabular-nums" id="detailFinalAmount">Rp 0</span>
+                <span class="font-black text-emerald-900 tabular-nums flex-shrink-0 whitespace-nowrap text-right" id="detailFinalAmount">Rp 0</span>
             </div>
         </div>
 
@@ -1501,13 +1501,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 payModalItemsList.innerHTML = '';
                 selectedDetails.forEach(item => {
                     const row = document.createElement('div');
-                    row.className = 'px-3 py-2 flex items-center justify-between text-xs text-zinc-800';
+                    row.className = 'px-3 py-2 flex items-center justify-between gap-3 text-xs text-zinc-800';
                     row.innerHTML = `
-                        <div class="flex items-center gap-2 min-w-0 pr-2">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
                             <span class="font-bold text-emerald-800 tabular-nums flex-shrink-0">${item.qty}x</span>
                             <span class="font-medium text-zinc-800 truncate">${item.name}</span>
                         </div>
-                        <span class="tabular-nums font-semibold text-zinc-700 flex-shrink-0">${formatRupiah(item.subtotal)}</span>
+                        <span class="tabular-nums font-semibold text-zinc-700 flex-shrink-0 whitespace-nowrap text-right">${formatRupiah(item.subtotal)}</span>
                     `;
                     payModalItemsList.appendChild(row);
                 });
@@ -1862,13 +1862,13 @@ document.addEventListener('DOMContentLoaded', function () {
             claimModalItemsList.innerHTML = '';
             selectedDetails.forEach(item => {
                 const row = document.createElement('div');
-                row.className = 'px-3 py-1.5 flex items-center justify-between text-xs text-zinc-800';
+                row.className = 'px-3 py-1.5 flex items-center justify-between gap-3 text-xs text-zinc-800';
                 row.innerHTML = `
-                    <div class="flex items-center gap-1.5 min-w-0 pr-2">
+                    <div class="flex items-center gap-1.5 min-w-0 flex-1">
                         <span class="font-bold text-emerald-800 tabular-nums flex-shrink-0">${item.qty}x</span>
                         <span class="font-medium text-zinc-800 truncate">${item.name}</span>
                     </div>
-                    <span class="tabular-nums font-semibold text-zinc-700 flex-shrink-0">${formatRupiah(item.subtotal)}</span>
+                    <span class="tabular-nums font-semibold text-zinc-700 flex-shrink-0 whitespace-nowrap text-right">${formatRupiah(item.subtotal)}</span>
                 `;
                 claimModalItemsList.appendChild(row);
             });
@@ -3131,13 +3131,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         data.items.forEach(item => {
             const row = document.createElement('div');
-            row.className = 'px-3.5 py-2 flex items-center justify-between text-xs text-zinc-800';
+            row.className = 'px-3.5 py-2 flex items-center justify-between gap-3 text-xs text-zinc-800';
             row.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-emerald-800">${item.qty}x</span>
-                    <span class="font-medium text-zinc-900">${item.name}</span>
+                <div class="flex items-center gap-2 min-w-0 flex-1">
+                    <span class="font-bold text-emerald-800 tabular-nums flex-shrink-0">${item.qty}x</span>
+                    <span class="font-medium text-zinc-900 truncate">${item.name}</span>
                 </div>
-                <span class="tabular-nums font-semibold text-zinc-700">${formatRupiah(item.subtotal)}</span>
+                <span class="tabular-nums font-semibold text-zinc-700 flex-shrink-0 whitespace-nowrap text-right">${formatRupiah(item.subtotal)}</span>
             `;
             itemsListEl.appendChild(row);
         });
