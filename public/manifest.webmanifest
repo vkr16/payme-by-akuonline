@@ -37,6 +37,13 @@
   ],
   "shortcuts": [
     {
+      "name": "QR Instant",
+      "short_name": "QR Instant",
+      "description": "Generate QRIS Dinamis instan tanpa tagihan",
+      "url": "/qr-instant",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
       "name": "Buka Dashboard",
       "short_name": "Dashboard",
       "description": "Kelola rekening dan tagihan patungan aktif",
