@@ -1,6 +1,8 @@
 const CACHE_NAME = 'payme-cache-v1';
 const STATIC_ASSETS = [
     '/vendor/fontawesome/css/all.css',
+    '/vendor/qrcodejs/qrcode.min.js',
+    '/vendor/jsqr/jsQR.min.js',
     '/images/scan-qr-code.svg',
     '/images/qris-saya.svg',
     '/icons/icon-192x192.png',

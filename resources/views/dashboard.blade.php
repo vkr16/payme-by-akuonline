@@ -27,9 +27,13 @@
         </div>
 
         <div class="flex items-center gap-2.5 w-full md:w-auto">
+            <a href="{{ route('instant_qr.index') }}" class="touch-target flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs sm:text-sm shadow-2xs transition-all">
+                <i class="fa-light fa-bolt text-amber-600 text-xs"></i>
+                <span>QR Instant</span>
+            </a>
             <a href="{{ route('bills.create') }}" class="touch-target flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl btn-primary font-semibold text-xs sm:text-sm shadow-xs transition-all">
                 <i class="fa-light fa-plus text-xs"></i>
-                <span>Buat Tagihan Baru</span>
+                <span>Buat Patungan Baru</span>
             </a>
         </div>
     </div>

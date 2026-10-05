@@ -81,6 +81,11 @@
                 <!-- Navigation Actions (Dynamic Auth / Guest) -->
                 <nav class="flex items-center gap-1 sm:gap-2">
                     @auth
+                        {{-- <a href="{{ route('instant_qr.index') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('instant_qr.*') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors" title="QR Instant">
+                            <i class="fa-light fa-bolt text-xs text-amber-500"></i>
+                            <span>QR Instant</span>
+                        </a> --}}
+
                         <a href="{{ route('dashboard') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('dashboard') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors" title="Dashboard">
                             <i class="fa-light fa-grid-2 text-xs"></i>
                             <span>Dashboard</span>

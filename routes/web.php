@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InstantQrController;
 use App\Http\Controllers\PaymentMethodController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,4 +57,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/payment-methods/qris/{id}', [PaymentMethodController::class, 'updateQris'])->name('payment_methods.qris.update');
     Route::delete('/payment-methods/qris/{id}', [PaymentMethodController::class, 'destroyQris'])->name('payment_methods.qris.destroy');
     Route::post('/payment-methods/qris/{id}/default', [PaymentMethodController::class, 'setDefaultQris'])->name('payment_methods.qris.set_default');
+
+    // QR Instant (Generate QRIS Dinamis Instan)
+    Route::get('/qr-instant', [InstantQrController::class, 'index'])->name('instant_qr.index');
+    Route::post('/qr-instant/generate', [InstantQrController::class, 'generate'])->name('instant_qr.generate');
 });
+
+Route::redirect('/instant-qr', '/qr-instant');
