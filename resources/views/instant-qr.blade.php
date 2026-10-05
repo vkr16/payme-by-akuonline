@@ -301,7 +301,8 @@
                     <!-- 4. Share button (Only if Web Share is supported) -->
                     <button type="button"
                         id="btnShareCard"
-                        class="hidden touch-target w-full py-2.5 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                        disabled
+                        class="hidden touch-target w-full py-2.5 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="fa-light fa-share-nodes text-sm"></i>
                         <span>Bagikan Gambar ke WhatsApp</span>
                     </button>
@@ -718,6 +719,7 @@ document.addEventListener('DOMContentLoaded', function () {
             btnOpenFullscreen.disabled = true;
             btnDownloadCard.disabled = true;
             btnCopyPayload.disabled = true;
+            if (btnShareCard) btnShareCard.disabled = true;
             return;
         }
 
@@ -742,6 +744,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnOpenFullscreen.disabled = false;
         btnDownloadCard.disabled = false;
         btnCopyPayload.disabled = false;
+        if (btnShareCard) btnShareCard.disabled = false;
     }
 
     // =========================================================================
@@ -792,125 +795,133 @@ document.addEventListener('DOMContentLoaded', function () {
     // =========================================================================
     // ACTIONS: DOWNLOAD CARD AS PNG (High Resolution 3x Canvas)
     // =========================================================================
+    // Helper to get active QR Image / Canvas Source
+    function getQrSource(callback) {
+        if (!instantQrCanvasContainer || currentNominal <= 0) return;
+        const qrCanvas = instantQrCanvasContainer.querySelector('canvas');
+        const qrImg = instantQrCanvasContainer.querySelector('img');
+
+        if (qrCanvas) {
+            callback(qrCanvas);
+        } else if (qrImg && qrImg.src) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => callback(img);
+            img.src = qrImg.src;
+        } else {
+            if (window.Notiflix) Notiflix.Notify.failure('QR Code belum selesai dimuat.');
+        }
+    }
+
+    // Helper to render high-resolution 3x branded PayMe Card Canvas
+    function createCardCanvas(qrSource) {
+        const cardCanvas = document.createElement('canvas');
+        const ctx = cardCanvas.getContext('2d');
+        const scale = 3;
+        const cardWidth = 380 * scale;
+        const cardHeight = (currentNote ? 540 : 510) * scale;
+
+        cardCanvas.width = cardWidth;
+        cardCanvas.height = cardHeight;
+
+        // Background
+        ctx.fillStyle = '#F4F4F5';
+        ctx.fillRect(0, 0, cardWidth, cardHeight);
+
+        // Top emerald header
+        ctx.fillStyle = '#064E3B';
+        ctx.fillRect(0, 0, cardWidth, 68 * scale);
+
+        // Header text
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${14 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.fillText('PayMe • QRIS DINAMIS', 24 * scale, 32 * scale);
+
+        ctx.font = `${10 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillStyle = '#A7F3D0';
+        ctx.fillText('Scan & Bayar Otomatis Nominal Pas', 24 * scale, 50 * scale);
+
+        // Merchant Info
+        const dlMerchantName = activeQris.merchantName || hostName;
+        const dlMerchantCity = activeQris.merchantCity || 'Indonesia';
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#71717A';
+        ctx.font = `600 ${9 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillText('TUJUAN PEMBAYARAN', cardWidth / 2, 95 * scale);
+
+        ctx.fillStyle = '#18181B';
+        ctx.font = `bold ${15 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillText(dlMerchantName, cardWidth / 2, 115 * scale);
+
+        ctx.fillStyle = '#71717A';
+        ctx.font = `${10 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillText(`${dlMerchantCity} • Host: ${hostName}`, cardWidth / 2, 132 * scale);
+
+        let qrStartY = 148 * scale;
+
+        // If note exists, draw note badge
+        if (currentNote) {
+            ctx.fillStyle = '#064E3B';
+            ctx.font = `600 ${10 * scale}px "Plus Jakarta Sans", sans-serif`;
+            ctx.fillText(`"${currentNote}"`, cardWidth / 2, 148 * scale);
+            qrStartY = 162 * scale;
+        }
+
+        // QR Box Background
+        const qrBoxSize = 220 * scale;
+        const qrBoxX = (cardWidth - qrBoxSize) / 2;
+        const qrBoxY = qrStartY;
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * scale);
+        ctx.fill();
+
+        // Draw QR Code onto Card
+        const qrSize = 190 * scale;
+        const qrX = (cardWidth - qrSize) / 2;
+        const qrY = qrBoxY + (qrBoxSize - qrSize) / 2;
+        ctx.drawImage(qrSource, qrX, qrY, qrSize, qrSize);
+
+        // Amount Section
+        const amountY = qrBoxY + qrBoxSize + (25 * scale);
+        ctx.fillStyle = '#71717A';
+        ctx.font = `600 ${9 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillText('TOTAL PEMBAYARAN', cardWidth / 2, amountY);
+
+        ctx.fillStyle = '#064E3B';
+        ctx.font = `900 ${22 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillText(formatRupiah(currentNominal), cardWidth / 2, amountY + (25 * scale));
+
+        // Footer Note
+        ctx.fillStyle = '#A1A1AA';
+        ctx.font = `${9 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillText('Scan dengan aplikasi BCA, Mandiri, BRI, GoPay, OVO, ShopeePay, DANA dll.', cardWidth / 2, amountY + (48 * scale));
+
+        // Border around card
+        ctx.strokeStyle = '#E4E4E7';
+        ctx.lineWidth = 1 * scale;
+        ctx.strokeRect(0, 0, cardWidth, cardHeight);
+
+        return cardCanvas;
+    }
+
+    // =========================================================================
+    // ACTIONS: DOWNLOAD CARD AS PNG (High Resolution 3x Canvas)
+    // =========================================================================
     if (btnDownloadCard) {
         btnDownloadCard.addEventListener('click', function () {
-            if (!instantQrCanvasContainer || currentNominal <= 0) return;
-            const qrCanvas = instantQrCanvasContainer.querySelector('canvas');
-            const qrImg = instantQrCanvasContainer.querySelector('img');
-
-            if (!qrCanvas && (!qrImg || !qrImg.src)) {
-                if (window.Notiflix) Notiflix.Notify.failure('QR Code belum selesai dimuat.');
-                return;
-            }
-
-            const downloadCard = function (qrSource) {
-                const cardCanvas = document.createElement('canvas');
-                const ctx = cardCanvas.getContext('2d');
-                const scale = 3;
-                const cardWidth = 380 * scale;
-                const cardHeight = (currentNote ? 540 : 510) * scale;
-
-                cardCanvas.width = cardWidth;
-                cardCanvas.height = cardHeight;
-
-                // Background
-                ctx.fillStyle = '#F4F4F5';
-                ctx.fillRect(0, 0, cardWidth, cardHeight);
-
-                // Top emerald header
-                ctx.fillStyle = '#064E3B';
-                ctx.fillRect(0, 0, cardWidth, 68 * scale);
-
-                // Header text
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = `bold ${14 * scale}px "Plus Jakarta Sans", sans-serif`;
-                ctx.textAlign = 'left';
-                ctx.fillText('PayMe • QRIS DINAMIS', 24 * scale, 32 * scale);
-
-                ctx.font = `${10 * scale}px "Plus Jakarta Sans", sans-serif`;
-                ctx.fillStyle = '#A7F3D0';
-                ctx.fillText('Scan & Bayar Otomatis Nominal Pas', 24 * scale, 50 * scale);
-
-                // Merchant Info
-                const dlMerchantName = activeQris.merchantName || hostName;
-                const dlMerchantCity = activeQris.merchantCity || 'Indonesia';
-
-                ctx.textAlign = 'center';
-                ctx.fillStyle = '#71717A';
-                ctx.font = `600 ${9 * scale}px "Plus Jakarta Sans", sans-serif`;
-                ctx.fillText('TUJUAN PEMBAYARAN', cardWidth / 2, 95 * scale);
-
-                ctx.fillStyle = '#18181B';
-                ctx.font = `bold ${15 * scale}px "Plus Jakarta Sans", sans-serif`;
-                ctx.fillText(dlMerchantName, cardWidth / 2, 115 * scale);
-
-                ctx.fillStyle = '#71717A';
-                ctx.font = `${10 * scale}px "Plus Jakarta Sans", sans-serif`;
-                ctx.fillText(`${dlMerchantCity} • Host: ${hostName}`, cardWidth / 2, 132 * scale);
-
-                let qrStartY = 148 * scale;
-
-                // If note exists, draw note badge
-                if (currentNote) {
-                    ctx.fillStyle = '#064E3B';
-                    ctx.font = `600 ${10 * scale}px "Plus Jakarta Sans", sans-serif`;
-                    ctx.fillText(`"${currentNote}"`, cardWidth / 2, 148 * scale);
-                    qrStartY = 162 * scale;
-                }
-
-                // QR Box Background
-                const qrBoxSize = 220 * scale;
-                const qrBoxX = (cardWidth - qrBoxSize) / 2;
-                const qrBoxY = qrStartY;
-
-                ctx.fillStyle = '#FFFFFF';
-                ctx.beginPath();
-                ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * scale);
-                ctx.fill();
-
-                // Draw QR Code onto Card
-                const qrSize = 190 * scale;
-                const qrX = (cardWidth - qrSize) / 2;
-                const qrY = qrBoxY + (qrBoxSize - qrSize) / 2;
-                ctx.drawImage(qrSource, qrX, qrY, qrSize, qrSize);
-
-                // Amount Section
-                const amountY = qrBoxY + qrBoxSize + (25 * scale);
-                ctx.fillStyle = '#71717A';
-                ctx.font = `600 ${9 * scale}px "Plus Jakarta Sans", sans-serif`;
-                ctx.fillText('TOTAL PEMBAYARAN', cardWidth / 2, amountY);
-
-                ctx.fillStyle = '#064E3B';
-                ctx.font = `900 ${22 * scale}px "Plus Jakarta Sans", sans-serif`;
-                ctx.fillText(formatRupiah(currentNominal), cardWidth / 2, amountY + (25 * scale));
-
-                // Footer Note
-                ctx.fillStyle = '#A1A1AA';
-                ctx.font = `${9 * scale}px "Plus Jakarta Sans", sans-serif`;
-                ctx.fillText('Scan dengan aplikasi BCA, Mandiri, BRI, GoPay, OVO, ShopeePay, DANA dll.', cardWidth / 2, amountY + (48 * scale));
-
-                // Border around card
-                ctx.strokeStyle = '#E4E4E7';
-                ctx.lineWidth = 1 * scale;
-                ctx.strokeRect(0, 0, cardWidth, cardHeight);
-
-                // Trigger Download
+            getQrSource(function (qrSource) {
+                const cardCanvas = createCardCanvas(qrSource);
                 const link = document.createElement('a');
                 link.download = `QRIS-Instant-${currentNominal}-${Date.now()}.png`;
                 link.href = cardCanvas.toDataURL('image/png');
                 link.click();
 
                 if (window.Notiflix) Notiflix.Notify.success('Kartu QRIS berhasil diunduh!');
-            };
-
-            if (qrCanvas) {
-                downloadCard(qrCanvas);
-            } else if (qrImg) {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => downloadCard(img);
-                img.src = qrImg.src;
-            }
+            });
         });
     }
 
@@ -936,25 +947,39 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Check Web Share API
+    // =========================================================================
+    // ACTIONS: SHARE CARD (Web Share API Level 2 - Shares the exact same card!)
+    // =========================================================================
     if (navigator.share && btnShareCard) {
         btnShareCard.classList.remove('hidden');
-        btnShareCard.addEventListener('click', async function () {
-            if (!instantQrCanvasContainer || currentNominal <= 0) return;
-            const qrCanvas = instantQrCanvasContainer.querySelector('canvas');
-            if (!qrCanvas) return;
+        btnShareCard.addEventListener('click', function () {
+            getQrSource(function (qrSource) {
+                const cardCanvas = createCardCanvas(qrSource);
+                cardCanvas.toBlob(async function (blob) {
+                    if (!blob) return;
+                    const fileName = `QRIS-Instant-${currentNominal}.png`;
+                    const file = new File([blob], fileName, { type: 'image/png' });
+                    const mName = activeQris.merchantName || hostName;
 
-            qrCanvas.toBlob(async function (blob) {
-                const file = new File([blob], `QRIS-Instant-${currentNominal}.png`, { type: 'image/png' });
-                try {
-                    await navigator.share({
+                    const shareData = {
                         title: `QRIS Pembayaran ${formatRupiah(currentNominal)}`,
-                        text: `Scan QRIS berikut untuk bayar ${formatRupiah(currentNominal)}${currentNote ? ' (' + currentNote + ')' : ''} ke ${activeQris.merchantName}`,
+                        text: `Scan QRIS berikut untuk bayar ${formatRupiah(currentNominal)}${currentNote ? ' (' + currentNote + ')' : ''} ke ${mName}`,
                         files: [file]
-                    });
-                } catch (err) {
-                    // Ignore share cancel
-                }
+                    };
+
+                    try {
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            await navigator.share(shareData);
+                        } else {
+                            await navigator.share({
+                                title: shareData.title,
+                                text: shareData.text
+                            });
+                        }
+                    } catch (err) {
+                        // Ignore share cancel
+                    }
+                }, 'image/png');
             });
         });
     }
