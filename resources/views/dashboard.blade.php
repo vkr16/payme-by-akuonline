@@ -33,7 +33,7 @@
             </a>
             <a href="{{ route('bills.create') }}" class="touch-target flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl btn-primary font-semibold text-xs sm:text-sm shadow-xs transition-all">
                 <i class="fa-light fa-plus text-xs"></i>
-                <span>Buat Patungan Baru</span>
+                <span>Buat Patungan</span>
             </a>
         </div>
     </div>
