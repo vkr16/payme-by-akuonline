@@ -309,7 +309,7 @@
                         disabled
                         class="hidden touch-target w-full py-2.5 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="fa-light fa-share-nodes text-sm"></i>
-                        <span>Bagikan Gambar ke WhatsApp</span>
+                        <span>Bagikan Gambar</span>
                     </button>
                 </div>
             </div>
