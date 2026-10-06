@@ -6,6 +6,15 @@
 @section('content')
 <div class="space-y-6 max-w-5xl mx-auto pb-16">
 
+
+    <!-- Top Navigation Breadcrumb -->
+    <div class="mb-4">
+        <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-emerald-800 transition-colors">
+            <i class="fa-light fa-arrow-left text-xs"></i>
+            <span>Kembali ke Dashboard</span>
+        </a>
+    </div>
+
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-zinc-200/90">
         <div>
@@ -16,9 +25,9 @@
                 <div>
                     <h1 class="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight flex items-center gap-2">
                         <span>QR Instant</span>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/70">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-800">
                             <i class="fa-light fa-sparkles text-[10px]"></i>
-                            <span>New Feature</span>
+                            <span>New</span>
                         </span>
                     </h1>
                 </div>
@@ -32,10 +41,6 @@
             <a href="{{ route('payment_methods.index') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 shadow-2xs text-zinc-700 transition-colors">
                 <i class="fa-light fa-wallet text-zinc-400"></i>
                 <span>Kelola&nbsp;QRIS</span>
-            </a>
-            <a href="{{ route('dashboard') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 shadow-2xs text-zinc-700 transition-colors">
-                <i class="fa-light fa-arrow-left text-zinc-400"></i>
-                <span>Dashboard</span>
             </a>
         </div>
     </div>
@@ -240,7 +245,7 @@
                         </div>
 
                         <!-- QR Code Canvas Display -->
-                        <div class="relative mx-auto w-56 h-56 p-2 rounded-2xl bg-white border-2 border-dashed border-zinc-200 flex items-center justify-center shadow-2xs" id="qrContainerWrapper">
+                        <div class="relative mx-auto w-56 h-56 p-3.5 rounded-2xl bg-white border-2 border-dashed border-zinc-200 flex items-center justify-center shadow-2xs" id="qrContainerWrapper">
                             <!-- Empty / Zero Amount Placeholder -->
                             <div id="qrEmptyPlaceholder" class="text-center p-4 space-y-2">
                                 <i class="fa-light fa-qrcode text-5xl text-zinc-300"></i>
@@ -341,7 +346,7 @@
         </div>
 
         <!-- Giant QR Container -->
-        <div class="w-64 h-64 mx-auto p-3 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center shadow-inner" id="fsQrContainer">
+        <div class="w-64 h-64 mx-auto p-4 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center shadow-inner" id="fsQrContainer">
             <!-- Canvas will be placed here -->
         </div>
 
@@ -733,8 +738,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         new QRCode(instantQrCanvasContainer, {
             text: currentDynamicPayload,
-            width: 200,
-            height: 200,
+            width: 188,
+            height: 188,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
@@ -756,12 +761,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             updateMerchantDisplay();
 
-            // Render giant QR for fullscreen
+            // Render giant QR for fullscreen with ideal quiet zone margin
             fsQrContainer.innerHTML = '';
             new QRCode(fsQrContainer, {
                 text: currentDynamicPayload,
-                width: 240,
-                height: 240,
+                width: 216,
+                height: 216,
                 colorDark: "#000000",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.M
@@ -813,13 +818,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Helper to render high-resolution 3x branded PayMe Card Canvas
+    // Helper to render high-resolution 3x branded PayMe Card Canvas (For Download & WhatsApp Share)
     function createCardCanvas(qrSource) {
         const cardCanvas = document.createElement('canvas');
         const ctx = cardCanvas.getContext('2d');
         const scale = 3;
         const cardWidth = 380 * scale;
-        const cardHeight = (currentNote ? 540 : 510) * scale;
+        const cardHeight = (currentNote ? 530 : 510) * scale;
 
         cardCanvas.width = cardWidth;
         cardCanvas.height = cardHeight;
@@ -849,7 +854,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.textAlign = 'center';
         ctx.fillStyle = '#71717A';
         ctx.font = `600 ${9 * scale}px "Plus Jakarta Sans", sans-serif`;
-        ctx.fillText('TUJUAN PEMBAYARAN', cardWidth / 2, 95 * scale);
+        ctx.fillText('TUJUAN PEMBAYARAN', cardWidth / 2, 94 * scale);
 
         ctx.fillStyle = '#18181B';
         ctx.font = `bold ${15 * scale}px "Plus Jakarta Sans", sans-serif`;
@@ -865,40 +870,44 @@ document.addEventListener('DOMContentLoaded', function () {
         if (currentNote) {
             ctx.fillStyle = '#064E3B';
             ctx.font = `600 ${10 * scale}px "Plus Jakarta Sans", sans-serif`;
-            ctx.fillText(`"${currentNote}"`, cardWidth / 2, 148 * scale);
-            qrStartY = 162 * scale;
+            ctx.fillText(`"${currentNote}"`, cardWidth / 2, 149 * scale);
+            qrStartY = 163 * scale;
         }
 
-        // QR Box Background
-        const qrBoxSize = 220 * scale;
+        // QR Box Background with balanced 20px quiet zone margin
+        const qrBoxSize = 230 * scale;
         const qrBoxX = (cardWidth - qrBoxSize) / 2;
         const qrBoxY = qrStartY;
 
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
-        ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * scale);
+        ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 14 * scale);
         ctx.fill();
 
-        // Draw QR Code onto Card
+        ctx.strokeStyle = '#E4E4E7';
+        ctx.lineWidth = 1 * scale;
+        ctx.stroke();
+
+        // Draw QR Code onto Card (Quiet zone: exactly 20px on each side)
         const qrSize = 190 * scale;
         const qrX = (cardWidth - qrSize) / 2;
         const qrY = qrBoxY + (qrBoxSize - qrSize) / 2;
         ctx.drawImage(qrSource, qrX, qrY, qrSize, qrSize);
 
         // Amount Section
-        const amountY = qrBoxY + qrBoxSize + (25 * scale);
+        const amountY = qrBoxY + qrBoxSize + (24 * scale);
         ctx.fillStyle = '#71717A';
         ctx.font = `600 ${9 * scale}px "Plus Jakarta Sans", sans-serif`;
         ctx.fillText('TOTAL PEMBAYARAN', cardWidth / 2, amountY);
 
         ctx.fillStyle = '#064E3B';
         ctx.font = `900 ${22 * scale}px "Plus Jakarta Sans", sans-serif`;
-        ctx.fillText(formatRupiah(currentNominal), cardWidth / 2, amountY + (25 * scale));
+        ctx.fillText(formatRupiah(currentNominal), cardWidth / 2, amountY + (24 * scale));
 
         // Footer Note
         ctx.fillStyle = '#A1A1AA';
         ctx.font = `${9 * scale}px "Plus Jakarta Sans", sans-serif`;
-        ctx.fillText('Scan dengan aplikasi BCA, Mandiri, BRI, GoPay, OVO, ShopeePay, DANA dll.', cardWidth / 2, amountY + (48 * scale));
+        ctx.fillText('Scan dengan aplikasi BCA, Mandiri, BRI, GoPay, OVO, ShopeePay, DANA dll.', cardWidth / 2, amountY + (46 * scale));
 
         // Border around card
         ctx.strokeStyle = '#E4E4E7';

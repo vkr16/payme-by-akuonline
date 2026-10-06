@@ -27,13 +27,17 @@
         </div>
 
         <div class="flex items-center gap-2.5 w-full md:w-auto">
-            <a href="{{ route('instant_qr.index') }}" class="touch-target flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs sm:text-sm shadow-2xs transition-all">
-                <i class="fa-light fa-bolt text-amber-600 text-xs"></i>
-                <span>QR Instant</span>
+            <a href="{{ route('instant_qr.index') }}" class="relative touch-target flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs sm:text-sm shadow-2xs transition-all">
+                <span class="absolute -top-2 -right-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-800 shadow-xs">
+                    <i class="fa-light fa-sparkles text-[8px] hidden sm:inline"></i>
+                    <span>New</span>
+                </span>
+                <i class="fa-light fa-bolt text-amber-600 text-xs shrink-0"></i>
+                <span class="whitespace-nowrap">QR Instant</span>
             </a>
             <a href="{{ route('bills.create') }}" class="touch-target flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl btn-primary font-semibold text-xs sm:text-sm shadow-xs transition-all">
-                <i class="fa-light fa-plus text-xs"></i>
-                <span>Buat Patungan</span>
+                <i class="fa-solid fa-plus text-xs shrink-0"></i>
+                <span class="whitespace-nowrap">Buat Patungan</span>
             </a>
         </div>
     </div>

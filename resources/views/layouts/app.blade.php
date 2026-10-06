@@ -58,7 +58,7 @@
             <div class="flex items-center justify-between h-16">
                 <!-- Brand Logo & Name -->
                 <div class="flex items-center gap-3">
-                    <a href="{{ auth()->check() ? route('dashboard') : url('/') }}" class="flex items-center gap-2.5 group">
+                    <a href="{{ url('/') }}" class="flex items-center gap-2.5 group">
                         <div class="w-8 h-8 rounded-lg bg-emerald-800 text-white flex items-center justify-center shadow-2xs transition-transform group-hover:scale-105">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M17 12v4a1 1 0 0 1-1 1h-4"/>
