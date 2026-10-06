@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'user_id',
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'service_fee',
     'discount',
     'receipt_image_path',
+    'receipt_image_paths',
     'status',
 ])]
 class Bill extends Model
@@ -37,6 +39,7 @@ class Bill extends Model
             'delivery_fee' => 'decimal:2',
             'service_fee' => 'decimal:2',
             'discount' => 'decimal:2',
+            'receipt_image_paths' => 'array',
         ];
     }
 
@@ -311,5 +314,48 @@ class Bill extends Model
             'total_claims_count' => (int) $this->claims()->count(),
             'pending_claims_count' => (int) $this->claims()->where('status', 'pending')->count(),
         ];
+    }
+
+    /**
+     * Get all receipt image paths as an array.
+     *
+     * @return array<int, string>
+     */
+    public function getReceiptImagePaths(): array
+    {
+        if (! empty($this->receipt_image_paths) && is_array($this->receipt_image_paths)) {
+            return array_values(array_filter($this->receipt_image_paths));
+        }
+
+        if (! empty($this->receipt_image_path)) {
+            return [$this->receipt_image_path];
+        }
+
+        return [];
+    }
+
+    /**
+     * Check if bill was created with receipt image(s).
+     */
+    public function hasReceiptImages(): bool
+    {
+        return count($this->getReceiptImagePaths()) > 0;
+    }
+
+    /**
+     * Get public URLs for receipt images that actually exist on storage disk.
+     *
+     * @return array<int, string>
+     */
+    public function getReceiptImageUrls(): array
+    {
+        $urls = [];
+        foreach ($this->getReceiptImagePaths() as $path) {
+            if ($path && Storage::disk('public')->exists($path)) {
+                $urls[] = Storage::disk('public')->url($path);
+            }
+        }
+
+        return $urls;
     }
 }

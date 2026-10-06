@@ -11,6 +11,8 @@ use App\Models\UserBank;
 use App\Models\UserQris;
 use App\Services\QrisService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class BillTest extends TestCase
@@ -1308,5 +1310,110 @@ class BillTest extends TestCase
 
         // Should NOT see the old rounded-off "+Tip Rp 1"
         $response->assertDontSee('+Tip Rp 1');
+    }
+
+    public function test_bill_with_receipt_shows_lihat_nota_asli_button_and_modal(): void
+    {
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('nota.jpg');
+        $storedPath = $file->store('bills/receipts', 'public');
+
+        $bill = Bill::factory()->create([
+            'receipt_image_path' => $storedPath,
+            'receipt_image_paths' => [$storedPath],
+        ]);
+
+        $response = $this->get('/b/'.$bill->slug);
+
+        $response->assertStatus(200);
+        $response->assertSee('Lihat Nota Asli');
+        $response->assertSee('id="receiptModal"', false);
+        $response->assertSee('Buka di Tab Baru');
+        $response->assertSee('Tutup');
+        $response->assertSee(Storage::disk('public')->url($storedPath));
+    }
+
+    public function test_bill_without_receipt_hides_lihat_nota_asli_button(): void
+    {
+        $bill = Bill::factory()->create([
+            'receipt_image_path' => null,
+            'receipt_image_paths' => null,
+        ]);
+
+        $response = $this->get('/b/'.$bill->slug);
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Lihat Nota Asli');
+        $response->assertDontSee('id="receiptModal"', false);
+    }
+
+    public function test_bill_with_missing_receipt_file_shows_error_in_modal(): void
+    {
+        Storage::fake('public');
+
+        // Stored path exists in database but file does not exist on disk
+        $bill = Bill::factory()->create([
+            'receipt_image_path' => 'bills/receipts/missing_file.jpg',
+            'receipt_image_paths' => ['bills/receipts/missing_file.jpg'],
+        ]);
+
+        $response = $this->get('/b/'.$bill->slug);
+
+        $response->assertStatus(200);
+        $response->assertSee('Lihat Nota Asli');
+        $response->assertSee('id="receiptModal"', false);
+        $response->assertSee('Gambar Nota Tidak Tersedia');
+        $response->assertSee('File gambar nota tidak ditemukan atau telah dihapus dari server.');
+    }
+
+    public function test_bill_store_saves_multiple_receipt_image_paths(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+
+        $file1 = UploadedFile::fake()->image('receipt1.jpg');
+        $file2 = UploadedFile::fake()->image('receipt2.jpg');
+
+        $response = $this->actingAs($user)->post('/bills', [
+            'title' => 'Makan Siang Bareng',
+            'qris_choice' => 'none',
+            'receipt_images' => [$file1, $file2],
+            'items' => [
+                [
+                    'name' => 'Pizza',
+                    'qty' => 1,
+                    'price' => 100000,
+                ],
+            ],
+        ]);
+
+        $bill = Bill::where('title', 'Makan Siang Bareng')->first();
+        $this->assertNotNull($bill);
+        $this->assertNotNull($bill->receipt_image_path);
+        $this->assertIsArray($bill->receipt_image_paths);
+        $this->assertCount(2, $bill->receipt_image_paths);
+
+        foreach ($bill->receipt_image_paths as $path) {
+            Storage::disk('public')->assertExists($path);
+        }
+
+        $response->assertRedirect(route('bills.show', ['slug' => $bill->slug]));
+
+        // Check show page displays both images
+        $showResponse = $this->get('/b/'.$bill->slug);
+        $showResponse->assertStatus(200);
+        $showResponse->assertSee('Lihat Nota Asli');
+        $showResponse->assertSee('id="receiptModal"', false);
+        foreach ($bill->receipt_image_paths as $path) {
+            $showResponse->assertSee(Storage::disk('public')->url($path));
+        }
+
+        // Deleting bill also cleans up both receipt files
+        $deleteResponse = $this->actingAs($user)->delete('/bills/'.$bill->id);
+        $deleteResponse->assertRedirect(route('dashboard'));
+
+        foreach ($bill->receipt_image_paths as $path) {
+            Storage::disk('public')->assertMissing($path);
+        }
     }
 }

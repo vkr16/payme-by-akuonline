@@ -157,10 +157,15 @@ class BillController extends Controller
 
             // 2. Process Receipt Image Upload
             $receiptImagePath = null;
+            $receiptImagePaths = [];
             if ($request->hasFile('receipt_images') && count($request->file('receipt_images')) > 0) {
-                $receiptImagePath = $request->file('receipt_images')[0]->store('bills/receipts', 'public');
+                foreach ($request->file('receipt_images') as $file) {
+                    $receiptImagePaths[] = $file->store('bills/receipts', 'public');
+                }
+                $receiptImagePath = $receiptImagePaths[0] ?? null;
             } elseif ($request->hasFile('receipt_image')) {
                 $receiptImagePath = $request->file('receipt_image')->store('bills/receipts', 'public');
+                $receiptImagePaths = [$receiptImagePath];
             }
 
             // 3. Generate unique random slug
@@ -182,6 +187,7 @@ class BillController extends Controller
                 'service_fee' => (float) ($validated['service_fee'] ?? 0),
                 'discount' => (float) ($validated['discount'] ?? 0),
                 'receipt_image_path' => $receiptImagePath,
+                'receipt_image_paths' => ! empty($receiptImagePaths) ? $receiptImagePaths : null,
                 'status' => 'active',
             ]);
 
@@ -604,8 +610,14 @@ class BillController extends Controller
         $bill = $user->bills()->where('id', $id)->orWhere('slug', $id)->firstOrFail();
         $billTitle = $bill->title;
 
-        // Clean up stored receipt image if exists
-        if ($bill->receipt_image_path && Storage::disk('public')->exists($bill->receipt_image_path)) {
+        // Clean up stored receipt images if exists
+        if ($bill->receipt_image_paths && is_array($bill->receipt_image_paths)) {
+            foreach ($bill->receipt_image_paths as $path) {
+                if ($path && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+        } elseif ($bill->receipt_image_path && Storage::disk('public')->exists($bill->receipt_image_path)) {
             Storage::disk('public')->delete($bill->receipt_image_path);
         }
 

@@ -99,6 +99,13 @@
                 <span>{{ $bill->created_at->translatedFormat('d M Y') }}</span>
             </span>
 
+            @if($bill->hasReceiptImages())
+                <button type="button" id="btnOpenReceiptModal" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 transition-colors cursor-pointer shadow-2xs" title="Lihat foto nota asli dari host">
+                    <i class="fa-light fa-receipt text-[11px] text-emerald-700"></i>
+                    <span>Lihat Nota Asli</span>
+                </button>
+            @endif
+
             <span id="billSettledBadge" class="{{ $bill->isFullySettled() ? 'inline-flex' : 'hidden' }} items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-white shadow-2xs" style="{{ $bill->isFullySettled() ? '' : 'display: none !important;' }}">
                 <i class="fa-light fa-badge-check"></i>
                 <span>LUNAS TERVERIFIKASI</span>
@@ -1067,6 +1074,64 @@
             <button type="button" id="btnSubmitBatchConfirm" class="touch-target px-5 py-2.5 rounded-xl btn-primary font-bold text-xs sm:text-sm shadow-xs inline-flex items-center gap-2 cursor-pointer transition-all">
                 <i class="fa-light fa-check-double text-xs" id="batchSubmitIcon"></i>
                 <span id="batchSubmitText">Konfirmasi Terpilih</span>
+            </button>
+        </div>
+    </div>
+</div>
+@endif
+
+@if($bill->hasReceiptImages())
+    @php
+        $receiptImageUrls = $bill->getReceiptImageUrls();
+        $hasAvailableReceiptImages = ! empty($receiptImageUrls);
+    @endphp
+<!-- ==========================================
+     MODAL: LIHAT NOTA ASLI
+     ========================================== -->
+<div id="receiptModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-5 sm:p-6 max-w-lg w-full text-left space-y-4 shadow-xl border border-zinc-200 animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+        <!-- Header Ringkas -->
+        <div class="flex items-center gap-2 pb-2 border-b border-zinc-100">
+            <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs flex-shrink-0">
+                <i class="fa-light fa-receipt"></i>
+            </div>
+            <h3 class="text-sm font-bold text-zinc-900">Nota Asli</h3>
+        </div>
+
+        <!-- Receipt Images Container / Error Container -->
+        <div class="flex-1 overflow-y-auto no-scrollbar space-y-3 min-h-0" id="receiptModalContent">
+            @if($hasAvailableReceiptImages)
+                <div id="receiptImagesList" class="space-y-3">
+                    @foreach($receiptImageUrls as $url)
+                        <img src="{{ $url }}" alt="Nota Asli Tagihan" class="w-full h-auto rounded-xl border border-zinc-200/80 shadow-2xs object-contain block receipt-img" onerror="handleReceiptImageError(this)">
+                    @endforeach
+                </div>
+                <div id="receiptImageErrorFallback" class="hidden p-6 text-center space-y-2 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-lg">
+                        <i class="fa-light fa-image-slash"></i>
+                    </div>
+                    <h4 class="font-bold text-sm text-zinc-900">Gambar Nota Gagal Dimuat</h4>
+                    <p class="text-xs text-zinc-500">File nota tidak dapat ditampilkan atau terjadi gangguan jaringan.</p>
+                </div>
+            @else
+                <div class="p-6 text-center space-y-2 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-lg">
+                        <i class="fa-light fa-image-slash"></i>
+                    </div>
+                    <h4 class="font-bold text-sm text-zinc-900">Gambar Nota Tidak Tersedia</h4>
+                    <p class="text-xs text-zinc-500">File gambar nota tidak ditemukan atau telah dihapus dari server.</p>
+                </div>
+            @endif
+        </div>
+
+        <!-- Action Buttons (Strictly 2 buttons) -->
+        <div class="pt-2 border-t border-zinc-100 flex items-center gap-2.5">
+            <button type="button" id="btnCloseReceiptModal" class="touch-target flex-1 py-2.5 px-4 rounded-xl border border-zinc-300 hover:bg-zinc-100 text-zinc-700 font-bold text-xs transition-colors cursor-pointer text-center">
+                Tutup
+            </button>
+            <button type="button" id="btnOpenReceiptNewTab" class="touch-target flex-1 py-2.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-2xs {{ $hasAvailableReceiptImages ? '' : 'opacity-50 cursor-not-allowed' }}">
+                <i class="fa-light fa-arrow-up-right-from-square"></i>
+                <span>Buka di Tab Baru</span>
             </button>
         </div>
     </div>
@@ -3270,6 +3335,64 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    // ==========================================
+    // RECEIPT MODAL LOGIC
+    // ==========================================
+    const receiptModal = document.getElementById('receiptModal');
+    const btnOpenReceiptModal = document.getElementById('btnOpenReceiptModal');
+    const btnCloseReceiptModal = document.getElementById('btnCloseReceiptModal');
+    const btnOpenReceiptNewTab = document.getElementById('btnOpenReceiptNewTab');
+    const receiptImageUrls = @json($bill->hasReceiptImages() ? $bill->getReceiptImageUrls() : []);
+
+    function openReceiptModal() {
+        if (receiptModal) receiptModal.classList.remove('hidden');
+    }
+
+    function closeReceiptModal() {
+        if (receiptModal) receiptModal.classList.add('hidden');
+    }
+
+    if (btnOpenReceiptModal) {
+        btnOpenReceiptModal.addEventListener('click', openReceiptModal);
+    }
+
+    if (btnCloseReceiptModal) {
+        btnCloseReceiptModal.addEventListener('click', closeReceiptModal);
+    }
+
+    if (receiptModal) {
+        receiptModal.addEventListener('click', function (e) {
+            if (e.target === receiptModal) closeReceiptModal();
+        });
+    }
+
+    if (btnOpenReceiptNewTab) {
+        btnOpenReceiptNewTab.addEventListener('click', function () {
+            if (receiptImageUrls && receiptImageUrls.length > 0) {
+                receiptImageUrls.forEach(function (url) {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                });
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && receiptModal && !receiptModal.classList.contains('hidden')) {
+            closeReceiptModal();
+        }
+    });
 });
+
+window.handleReceiptImageError = function (img) {
+    if (img) img.style.display = 'none';
+    const fallback = document.getElementById('receiptImageErrorFallback');
+    if (fallback) fallback.classList.remove('hidden');
+    const openBtn = document.getElementById('btnOpenReceiptNewTab');
+    if (openBtn) {
+        openBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        openBtn.setAttribute('disabled', 'disabled');
+    }
+};
 </script>
 @endpush
