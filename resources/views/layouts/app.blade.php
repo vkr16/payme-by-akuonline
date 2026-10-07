@@ -76,6 +76,13 @@
                             <span class="text-[10px] text-zinc-400 font-medium mt-0.5">by AkuOnline</span>
                         </div>
                     </a>
+
+                    @unless (app()->isProduction())
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-300/80 shadow-2xs select-none" title="Environment: {{ app()->environment() }}">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            <span>{{ app()->environment() }}</span>
+                        </span>
+                    @endunless
                 </div>
 
                 <!-- Navigation Actions (Dynamic Auth / Guest) -->
