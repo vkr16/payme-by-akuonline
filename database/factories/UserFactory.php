@@ -32,7 +32,18 @@ class UserFactory extends Factory
             'avatar' => null,
             'is_active' => true,
             'last_login_at' => null,
+            'roles' => User::ROLE_USER,
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * Indicate that the model's role is admin.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'roles' => User::ROLE_ADMIN,
+        ]);
     }
 }

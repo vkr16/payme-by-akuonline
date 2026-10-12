@@ -105,6 +105,7 @@ class AuthController extends Controller
             'password' => $validated['password'],
             'is_active' => true,
             'last_login_at' => now(),
+            'roles' => User::ROLE_USER,
         ]);
 
         Auth::login($user, remember: true);

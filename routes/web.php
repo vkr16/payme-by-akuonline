@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\DashboardController;
@@ -61,6 +62,11 @@ Route::middleware('auth')->group(function () {
     // QR Instant (Generate QRIS Dinamis Instan)
     Route::get('/qr-instant', [InstantQrController::class, 'index'])->name('instant_qr.index');
     Route::post('/qr-instant/generate', [InstantQrController::class, 'generate'])->name('instant_qr.generate');
+});
+
+// Administrator Dashboard Routes
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 });
 
 Route::redirect('/instant-qr', '/qr-instant');

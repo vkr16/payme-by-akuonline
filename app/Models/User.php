@@ -12,12 +12,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'phone_number', 'password', 'avatar', 'is_active', 'last_login_at'])]
+#[Fillable(['name', 'email', 'phone_number', 'password', 'avatar', 'is_active', 'last_login_at', 'roles'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    public const ROLE_ADMIN = 1;
+
+    public const ROLE_USER = 2;
 
     /**
      * Get the attributes that should be cast.
@@ -30,7 +34,24 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
+            'roles' => 'integer',
         ];
+    }
+
+    /**
+     * Check if the user is an admin.
+     */
+    public function isAdmin(): bool
+    {
+        return (int) $this->roles === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Check if the user is a regular user.
+     */
+    public function isUser(): bool
+    {
+        return (int) $this->roles === self::ROLE_USER;
     }
 
     /**

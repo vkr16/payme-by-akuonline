@@ -86,6 +86,13 @@
                             <span>QR Instant</span>
                         </a> --}}
 
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('admin.dashboard') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('admin.*') ? 'text-amber-800 bg-amber-50 border border-amber-200/80' : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50/70' }} rounded-lg transition-colors" title="Admin Control Center">
+                                <i class="fa-solid fa-shield-halved text-xs text-amber-600"></i>
+                                <span>Admin</span>
+                            </a>
+                        @endif
+
                         <a href="{{ route('dashboard') }}" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold {{ request()->routeIs('dashboard') ? 'text-emerald-800 bg-emerald-50' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70' }} rounded-lg transition-colors" title="Dashboard">
                             <i class="fa-light fa-grid-2 text-xs"></i>
                             <span>Dashboard</span>
